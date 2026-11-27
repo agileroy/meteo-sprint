@@ -21,3 +21,9 @@
 - [x] 4.3 Ajouter `package.json`, `.github/workflows/pages.yml` (repris du ROTI, sans job `rules`), `README.md` (fonctionnement, architecture, base partagée avec le ROTI et règles dans le dépôt `roti`, développement, méthode OpenSpec), pousser sur `main` et vérifier la publication sur https://agileroy.github.io/meteo-sprint/. Fait le 27 novembre 2026 : workflow « Tests et publication » réussi (tests puis déploiement github-pages du commit 02812ba).
 - [x] 4.4 Ajouter la carte « Météo du sprint » dans la section « En atelier » de https://agileroy.github.io/outils/ (dépôt `agileroy.github.io`) et mettre à jour le compteur d'outils. Fait le 27 novembre 2026 : carte avant le ROTI, « 13 outils ».
 - [ ] 4.5 Faire une météo réelle sur le site publié avec une équipe de test, puis supprimer l'équipe. Vérification : validation explicite de l'auteur. Le 27 novembre 2026 : équipe de test créée sur le site publié, clé fausse refusée par la base, météo votée et révélée automatiquement, historique inscrit, équipe supprimée (« Équipe introuvable. ») ; reste la validation de l'auteur.
+
+## 5. Retours de l'auteur (27 novembre 2026)
+
+- [x] 5.1 Révélation automatique désactivée par défaut (interrupteur toujours mémorisé). Vérification : premier passage sans préférence → aucune révélation quand tout le monde a voté.
+- [x] 5.2 Carte « Rejoindre avec un téléphone » reprise du poker planning : QR code agrandissable, adresse copiée en un clic avec confirmation. Vérification : copie et fenêtre du QR code en mode démo.
+- [x] 5.3 Graphique : colonne haute de l'indice moyen (axe de 0 à 5), répartition à l'intérieur, indice au-dessus, mention de lecture. Vérification : un sprint à un vote Éclaircies monte à 4, pas en haut. Fait le 27 novembre 2026 : parcours de démo rejoué (hauteurs mesurées dans le SVG : 3,25 → 3,3 et 1,0), 6 vues × 4 largeurs × 2 thèmes sans débordement.

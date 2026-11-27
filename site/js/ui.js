@@ -104,8 +104,22 @@ function bump(node, value) {
   counter?.classList.add('bump');
 }
 
+/** Copie `text` dans le presse-papiers ; true si la copie a réussi. */
 async function copyText(text) {
-  try { await navigator.clipboard.writeText(text); return true; } catch { return false; }
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    // Repli : sélection d'un champ caché (navigateurs anciens ou presse-papiers refusé).
+    const field = el('textarea', { readonly: true, 'aria-hidden': 'true', class: 'visually-hidden' });
+    field.value = text;
+    document.body.append(field);
+    field.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch { ok = false; }
+    field.remove();
+    return ok;
+  }
 }
 
 /* ---------------------------------------------------------------- Résultats (partagés) */
@@ -143,44 +157,55 @@ function renderResults(container, votes, mine = null) {
 
 /* ---------------------------------------------------------------- Graphique d'évolution */
 
-/** Graphique : barres empilées de la répartition (en %) et courbe de l'indice (axe de 1 à 5). */
+/**
+ * Graphique : une colonne par sprint, haute de l'indice moyen (axe de 0 à 5), colorée à l'intérieur
+ * selon la répartition des votes (de bas en haut : Orage … Grand soleil), avec l'indice au-dessus.
+ */
 function renderChart(box, tip, entries, { onSelect } = {}) {
   const width = Math.max(300, Math.round(box.clientWidth || 640));
   const narrow = width < 520;
   const height = narrow ? 240 : 300;
-  const m = { top: 14, right: 8, bottom: 30, left: 26 };
+  const m = { top: 22, right: 8, bottom: 30, left: 26 };
   const plotW = width - m.left - m.right;
   const plotH = height - m.top - m.bottom;
   const slot = plotW / entries.length;
   const barW = Math.min(48, slot * 0.62);
-  const yIndex = (v) => m.top + plotH * (1 - (v - 1) / 4);
+  const yOf = (v) => m.top + plotH * (1 - v / 5);
   const order = [...WEATHERS].reverse(); // de bas en haut : Orage … Grand soleil
 
   const root = svg('svg', {
     viewBox: `0 0 ${width} ${height}`, width, height, role: 'img',
-    'aria-label': `Évolution sur ${plural(entries.length, 'sprint')} : indice ${entries.map((e) => formatIndex(e.index)).join(', ')}. Détail dans le tableau.`,
+    'aria-label': `Évolution sur ${plural(entries.length, 'sprint')} : indice ${entries.map((e) => formatIndex(e.index)).join(', ')} sur 5. Détail dans le tableau.`,
   });
 
-  for (let v = 1; v <= 5; v += 1) {
-    root.append(svg('line', { class: 'grid-line', x1: m.left, x2: width - m.right, y1: yIndex(v), y2: yIndex(v) }));
-    const label = svg('text', { class: 'axis-text', x: m.left - 8, y: yIndex(v) + 4, 'text-anchor': 'end' });
+  for (let v = 0; v <= 5; v += 1) {
+    root.append(svg('line', { class: 'grid-line', x1: m.left, x2: width - m.right, y1: yOf(v), y2: yOf(v) }));
+    const label = svg('text', { class: 'axis-text', x: m.left - 8, y: yOf(v) + 4, 'text-anchor': 'end' });
     label.textContent = String(v);
     root.append(label);
   }
 
   const maxChars = Math.max(3, Math.floor(slot / 7.5));
+  const showValues = !narrow || entries.length <= 8;
   const points = [];
   entries.forEach((entry, i) => {
     const cx = m.left + slot * (i + 0.5);
     const group = svg('g', { class: 'sprint', tabindex: '0', 'data-index': String(i) });
-    group.append(svg('rect', { class: 'hit', x: cx - slot / 2 + 1, y: m.top - 6, width: slot - 2, height: plotH + 12, rx: 8 }));
+    group.append(svg('rect', { class: 'hit', x: cx - slot / 2 + 1, y: m.top - 16, width: slot - 2, height: plotH + 22, rx: 8 }));
+    const top = yOf(entry.index);
+    const barH = m.top + plotH - top;
     let y = m.top + plotH;
     for (const weather of order) {
       const count = entry.counts[weather.key];
       if (!count) continue;
-      const h = (count / entry.total) * plotH;
+      const h = (count / entry.total) * barH;
       y -= h;
       group.append(svg('rect', { class: `seg-${weather.key}`, x: cx - barW / 2, y, width: barW, height: Math.max(h - 1, 0.5), rx: 2 }));
+    }
+    if (showValues) {
+      const value = svg('text', { class: 'index-text', x: cx, y: top - 7, 'text-anchor': 'middle' });
+      value.textContent = formatIndex(entry.index);
+      group.append(value);
     }
     const name = sprintName(entry);
     const label = svg('text', { class: 'x-text', x: cx, y: height - 10, 'text-anchor': 'middle' });
@@ -189,17 +214,7 @@ function renderChart(box, tip, entries, { onSelect } = {}) {
     label.textContent = name.length <= maxChars ? name : (short && short.length <= maxChars ? short : `${name.slice(0, maxChars - 1)}…`);
     group.append(label);
     root.append(group);
-    points.push([cx, yIndex(entry.index)]);
-  });
-
-  root.append(svg('polyline', { class: 'index-line', points: points.map((p) => p.join(',')).join(' ') }));
-  points.forEach(([x, y], i) => {
-    root.append(svg('circle', { class: 'index-dot', cx: x, cy: y, r: 4.5 }));
-    if (!narrow || entries.length <= 6) {
-      const t = svg('text', { class: 'index-text', x, y: y - 10, 'text-anchor': 'middle' });
-      t.textContent = formatIndex(entries[i].index);
-      root.append(t);
-    }
+    points.push([cx, top]);
   });
 
   box.replaceChildren(root);
@@ -217,7 +232,7 @@ function renderChart(box, tip, entries, { onSelect } = {}) {
     tip.hidden = false;
     const left = Math.min(Math.max((x / width) * 100, 18), 82);
     tip.style.left = `${left}%`;
-    tip.style.top = `${Math.max(0, m.top + 4)}px`;
+    tip.style.top = `${Math.max(0, points[i][1] + 8)}px`;
     onSelect?.(i);
   }
   function hide() {
@@ -503,8 +518,8 @@ export async function startApp(store, { demo = false } = {}) {
 
     $('chart-legend').replaceChildren(
       ...WEATHERS.map((w) => el('li', {}, el('span', { class: `dot dot-${w.key}` }), w.name)),
-      el('li', {}, el('span', { class: 'legend-line' }), 'Indice moyen (1 à 5)'),
     );
+    $('chart-note').textContent = 'Hauteur de la colonne : indice moyen de l\'équipe, sur 5. Couleurs : répartition des votes.';
     renderChartOnly(true);
 
     const head = el('tr', {},
@@ -722,9 +737,9 @@ export async function startApp(store, { demo = false } = {}) {
   /* ------------------------------------------------------------ Vue animateur */
 
   const qrReady = loadScript('vendor/qrcode-generator-1.4.4.js?v=__VERSION__');
-  const host = { code: null, meta: null, data: { votes: null, participants: null }, timer: null, heldAt: null, deadline: 0 };
+  const host = { code: null, joinUrl: '', meta: null, data: { votes: null, participants: null }, timer: null, heldAt: null, deadline: 0 };
 
-  const autoEnabled = () => readStored(AUTO_KEY) !== 'off';
+  const autoEnabled = () => readStored(AUTO_KEY) === 'on';   // désactivée par défaut
   $('auto-reveal').checked = autoEnabled();
 
   function stopCountdown() {
@@ -790,10 +805,22 @@ export async function startApp(store, { demo = false } = {}) {
     Object.assign(host, { code, meta: null, data: { votes: null, participants: null }, heldAt: null });
     stopCountdown();
     const joinUrl = absoluteUrl({ meteo: code });
+    const joinLabel = joinUrl.replace(/^https?:\/\//, '');
+    host.joinUrl = joinUrl;
     $('join-code').textContent = code;
-    $('join-url').textContent = joinUrl.replace(/^https?:\/\//, '');
+    $('qr-dialog-code').textContent = code;
+    $('join-url').textContent = joinLabel;
+    $('qr-dialog-url').textContent = joinLabel;
+    $('room-copy').classList.remove('is-done');
+    $('room-copy-status').textContent = '';
     $('qr').innerHTML = '';
-    qrReady.then(() => { $('qr').innerHTML = qrSvg(joinUrl); });
+    $('qr-large').innerHTML = '';
+    qrReady.then(() => {
+      const qr = qrSvg(joinUrl);
+      $('qr').innerHTML = qr;
+      $('qr-large').innerHTML = qr;
+      $('qr-open').hidden = !qr;
+    });
     $('host-results').hidden = true;
     $('auto-reveal').checked = autoEnabled();
 
@@ -822,6 +849,25 @@ export async function startApp(store, { demo = false } = {}) {
     event.preventDefault();
     if (host.meta) go({ equipe: host.meta.teamId });
   });
+  const qrDialog = $('qr-dialog');
+  $('qr-open').addEventListener('click', () => qrDialog.showModal());
+  $('qr-close').addEventListener('click', () => qrDialog.close());
+  qrDialog.addEventListener('click', (event) => { if (event.target === qrDialog) qrDialog.close(); });
+
+  // Copier le lien en un clic, depuis la carte du QR code.
+  let copyTimer;
+  $('room-copy').addEventListener('click', async () => {
+    const copied = await copyText(host.joinUrl);
+    $('room-copy').classList.toggle('is-done', copied);
+    $('room-copy-status').className = copied ? 'copy-status' : 'copy-status is-error';
+    $('room-copy-status').textContent = copied ? 'Lien copié' : `Copie impossible : ${host.joinUrl}`;
+    clearTimeout(copyTimer);
+    copyTimer = setTimeout(() => {
+      $('room-copy').classList.remove('is-done');
+      $('room-copy-status').textContent = '';
+    }, 2500);
+  });
+
   $('reveal').addEventListener('click', doReveal);
   $('reopen').addEventListener('click', async () => {
     $('reopen').disabled = true;

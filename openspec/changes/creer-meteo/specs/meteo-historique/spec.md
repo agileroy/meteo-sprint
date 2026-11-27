@@ -22,17 +22,30 @@ La base SHALL refuser une entrée d'historique écrite par un navigateur qui n'a
 - **THEN** la base refuse l'écriture
 
 ### Requirement: Graphique d'évolution
-La page d'une équipe SHALL afficher un graphique de son historique, du sprint le plus ancien au plus récent : pour chaque sprint, une barre empilée de la répartition des météos (en pourcentage, couleurs des météos), et la courbe de l'indice moyen sur un axe de 1 à 5. Le graphique SHALL montrer les 12 derniers sprints, avec « Tout afficher » au-delà. Sans historique, la page SHALL afficher « Pas encore de météo pour cette équipe. ».
+La page d'une équipe SHALL afficher un graphique de son historique, du sprint le plus ancien au plus récent, sur un axe de 0 à 5 : pour chaque sprint, une colonne dont la hauteur est l'indice moyen de l'équipe sur ce sprint, colorée à l'intérieur selon la répartition des votes (part de chaque météo, couleurs des météos), avec l'indice écrit au-dessus. Sans historique, la page SHALL afficher « Pas encore de météo pour cette équipe. ».
 
 #### Scenario: Tendance qui se dégrade
 - **GIVEN** une équipe avec trois sprints d'indice 4,2, 3,5 et 2,8
 - **WHEN** quelqu'un ouvre la page de l'équipe
-- **THEN** la courbe descend sur les trois derniers sprints et le tableau affiche « 4,2 », « 3,5 » et « 2,8 »
+- **THEN** les trois colonnes s'arrêtent à 4,2, 3,5 et 2,8 sur l'axe de 0 à 5, et le tableau affiche « 4,2 », « 3,5 » et « 2,8 »
+
+#### Scenario: Un seul vote Éclaircies
+- **GIVEN** un sprint avec un seul vote, « Éclaircies »
+- **WHEN** quelqu'un ouvre la page de l'équipe
+- **THEN** sa colonne, entièrement de la couleur d'Éclaircies, monte jusqu'à 4 sur l'axe, et non jusqu'en haut
 
 #### Scenario: Survol d'un sprint
 - **GIVEN** le graphique d'évolution
 - **WHEN** l'utilisateur survole ou touche la barre d'un sprint
 - **THEN** une bulle affiche son libellé, sa date, la répartition et l'indice
+
+### Requirement: Lecture et étendue du graphique
+Une mention sous le graphique SHALL expliquer sa lecture : « Hauteur de la colonne : indice moyen de l'équipe, sur 5. Couleurs : répartition des votes. ». Le graphique SHALL montrer les 12 derniers sprints, avec « Tout afficher » au-delà.
+
+#### Scenario: Plus de 12 sprints
+- **GIVEN** une équipe avec 14 sprints d'historique
+- **WHEN** quelqu'un clique sur « Tout afficher »
+- **THEN** le graphique montre les 14 colonnes, au lieu des 12 dernières
 
 ### Requirement: Tableau de l'historique
 Sous le graphique, un tableau SHALL reprendre, pour chaque sprint, le libellé, la date, le nombre de votes par météo, le total et l'indice, pour une lecture au lecteur d'écran ou sur téléphone.

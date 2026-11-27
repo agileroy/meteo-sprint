@@ -16,6 +16,8 @@
   --danger-bg: #f9d9d6;
   --danger-text: #8c1d18;
   --sun-soft: #f8e9c6;
+  --success-bg: #dcefe1;
+  --success-text: #1e5631;
   /* Météos : barres, graphique et pastilles. */
   --w-soleil: #e3a008;
   --w-eclaircies: #ecd06f;
@@ -51,6 +53,8 @@
   --danger-bg: #4a1d1a;
   --danger-text: #ffb4ab;
   --sun-soft: #3d3014;
+  --success-bg: #1d3a28;
+  --success-text: #a9e2bb;
   --w-soleil: #f5b82e;
   --w-eclaircies: #e9d68f;
   --w-nuageux: #8f989f;
@@ -236,8 +240,6 @@ input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 
 .chart .seg-nuageux { fill: var(--w-nuageux); }
 .chart .seg-pluie { fill: var(--w-pluie); }
 .chart .seg-orage { fill: var(--w-orage); }
-.chart .index-line { fill: none; stroke: var(--text); stroke-width: 2.5; stroke-linejoin: round; }
-.chart .index-dot { fill: var(--surface); stroke: var(--text); stroke-width: 2.5; }
 .chart .index-text { fill: var(--text); font-size: 12px; font-weight: 750; font-family: var(--font); paint-order: stroke; stroke: var(--surface); stroke-width: 4px; }
 .chart .sprint { cursor: pointer; outline: none; }
 .chart .sprint .hit { fill: transparent; }
@@ -253,7 +255,7 @@ input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 
 .chart-tip li { display: flex; align-items: center; gap: 6px; }
 .chart-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.88rem; color: var(--muted); }
 .chart-legend li { display: flex; align-items: center; gap: 6px; }
-.legend-line { display: inline-block; width: 18px; height: 3px; border-radius: 2px; background: var(--text); }
+.chart-note { color: var(--muted); font-size: 0.88rem; }
 
 .table-wrap { overflow-x: auto; }
 .history-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
@@ -300,12 +302,44 @@ input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 
 
 .host-grid { display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); gap: 16px; align-items: start; }
 .join-panel { align-items: center; text-align: center; }
-.qr { width: 100%; max-width: 280px; aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: #fff; padding: 6px; }
-.qr svg { display: block; width: 100%; height: 100%; }
-.join-url { overflow-wrap: anywhere; }
+/* Carte « Rejoindre avec un téléphone » : même mécanisme que le poker planning (QR code agrandissable,
+   lien copié en un clic). */
+.qr { display: block; background: #fff; border-radius: 8px; padding: 6px; line-height: 0; }
+.qr svg { display: block; width: 100%; height: auto; }
+.qr-button {
+  flex: none; width: 100%; max-width: 280px; padding: 0; border: 1px solid var(--border); border-radius: 10px;
+  background: #fff; cursor: zoom-in;
+}
+.qr-button:hover { border-color: var(--accent); }
+.qr-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.host-grid.is-revealed .join-panel .qr-button { max-width: 160px; }
+.join-hint { margin: 4px 0 -4px; color: var(--muted); font-size: 0.925rem; }
+.join-url { margin: 0; font-weight: 650; overflow-wrap: anywhere; }
+.join-link { display: flex; align-items: center; justify-content: center; gap: 4px; max-width: 100%; }
+.join-link .join-url { min-width: 0; }
+.copy-button {
+  flex: none; display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0;
+  border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer;
+}
+.copy-button:hover { color: var(--accent); background: var(--surface-2); }
+.copy-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.copy-button .icon-check { display: none; }
+.copy-button.is-done { color: var(--success-text); background: var(--success-bg); }
+.copy-button.is-done .icon-copy { display: none; }
+.copy-button.is-done .icon-check { display: block; }
+.copy-status { margin: -6px 0 0; min-height: 1.2em; color: var(--success-text); font-size: 0.875rem; }
+.copy-status.is-error { color: var(--danger-text); }
+.qr-dialog {
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text);
+  padding: 24px; width: min(90vw, 520px); text-align: center; box-shadow: 0 20px 60px rgb(0 0 0 / 0.35);
+}
+.qr-dialog::backdrop { background: rgb(0 0 0 / 0.55); }
+.qr-dialog h2 { font-size: 1.2rem; margin-bottom: 16px; }
+.qr-large { width: min(70vw, 60vh, 420px); margin: 0 auto 12px; padding: 14px; }
+.qr-dialog .join-url { margin-bottom: 8px; }
+.qr-dialog-code { margin-bottom: 18px; }
 .join-code-label { margin-top: 4px; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.8rem; font-weight: 650; }
 .join-code { font-size: clamp(2.4rem, 2rem + 2vw, 3.6rem); font-weight: 800; letter-spacing: 0.18em; line-height: 1; padding-left: 0.18em; }
-.host-grid.is-revealed .join-panel .qr { max-width: 160px; }
 
 .live-panel { gap: 16px; }
 .counters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
