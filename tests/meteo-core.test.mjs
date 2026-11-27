@@ -182,3 +182,18 @@ test('page d\'équipe : météo d\'un sprint par l\'indice arrondi, dernière m�
   assert.equal(lastWeatherText([{ index: 4 }, { index: 4.3 }, { index: 4.7 }]), 'Dernière météo : Grand soleil · 4,7 / 5 · 3 sprints');
   assert.equal(FORECAST_CARDS, 6);
 });
+
+import { ballotsOf } from '../site/js/meteo-core.js';
+
+test('bulletins de vote : connectés et votants, sans la météo, limités à 24', () => {
+  const on = (...uids) => Object.fromEntries(uids.map((u) => [u, { connections: { c: true } }]));
+  const { items, more } = ballotsOf({ b: 5, parti: 1, triche: 9 }, on('c', 'a', 'b'));
+  assert.deepEqual(items, [{ uid: 'a', voted: false }, { uid: 'b', voted: true }, { uid: 'c', voted: false }, { uid: 'parti', voted: true }]);
+  assert.equal(more, 0);
+  assert.ok(!JSON.stringify(items).includes('5'), 'aucune météo');
+  const many = Object.fromEntries(Array.from({ length: 30 }, (_, i) => [`u${String(i).padStart(2, '0')}`, { connections: { c: true } }]));
+  const big = ballotsOf({}, many);
+  assert.equal(big.items.length, 24);
+  assert.equal(big.more, 6);
+  assert.deepEqual(ballotsOf(null, null), { items: [], more: 0 });
+});

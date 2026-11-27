@@ -6,7 +6,7 @@ import {
   WEATHERS, STATUS, AUTO_REVEAL_DELAY_MS, FEW_VOTES, CHART_SPRINTS, NAME_MAX, normalizeCode, isValidCode, isValidTeamId,
   isValidKey, isValidVote, weatherFor, valuesOf, countsOf, totalOf, weatherIndex, formatIndex, distribution, topWeathers,
   joinNames, connectedUids, everyoneVoted, situationKey, historyList, sprintName, nextLabel, parseTeams, touchTeam,
-  removeTeam, plural, formatDate, formatDay, validateName, tickerItems, skyFor, parseSessionId, weatherOfEntry, lastWeatherText, FORECAST_CARDS,
+  removeTeam, plural, formatDate, formatDay, validateName, tickerItems, skyFor, parseSessionId, weatherOfEntry, lastWeatherText, FORECAST_CARDS, ballotsOf,
 } from './meteo-core.js?v=__VERSION__';
 
 const $ = (id) => document.getElementById(id);
@@ -313,6 +313,7 @@ function buildSky(container) {
   const layer = (key, ...children) => el('div', { class: `sky-layer sky-${key}` }, ...children);
   const bolt = svg('svg', { class: 'bolt', viewBox: '0 0 20 40' }, svg('path', { d: 'M12 0 2 22h7l-3 18 12-25h-7l5-15z', fill: '#ffe066' }));
   container.replaceChildren(
+    layer('aube', stars(r), sun(), clouds(r, 2, { minW: 150, maxW: 220, maxTop: 30, opacity: 0.85, speed: [130, 190] })),
     layer('neutre', clouds(r, 2, { minW: 160, maxW: 240, maxTop: 30, opacity: 0.55, speed: [120, 180] })),
     layer('soleil', stars(r), sun(), clouds(r, 2, { minW: 120, maxW: 180, maxTop: 35, opacity: 0.9, speed: [110, 160] })),
     layer('eclaircies', stars(r), sun('sky-sun sky-sun-small'), clouds(r, 5, { minW: 150, maxW: 280, maxTop: 45 })),
@@ -394,6 +395,7 @@ export async function startApp(store, { demo = false } = {}) {
   $('demo-chip').hidden = !demo;
   buildSky($('sky'));
   buildSky($('team-sky'));
+  buildSky($('host-sky'));
 
   try {
     await Promise.race([
@@ -1037,10 +1039,28 @@ export async function startApp(store, { demo = false } = {}) {
     $('live-hint').textContent = revealed
       ? 'Résultats révélés et inscrits dans l\'historique de l\'équipe. Rouvrez les votes pour un retardataire.'
       : (values.length ? `${plural(values.length, 'vote')} sur ${plural(online, 'connecté')}. Les météos restent cachées jusqu'à la révélation.` : 'En attente des premiers votes…');
-    document.querySelector('.host-grid').classList.toggle('is-revealed', revealed);
+    $('host-top').classList.toggle('is-revealed', revealed);
+    if (!revealed) renderBallots();
     $('host-results').hidden = !revealed;
     if (revealed) { stopCountdown(); renderHostBulletin(); }
     checkAutoReveal();
+  }
+
+  /** Bulletins de vote anonymes : un nuage par participant, coché quand il a voté. */
+  const CLOUD_BALLOT = 'M10 30a7 7 0 0 1-.6-14A10 10 0 0 1 28.6 13a8.5 8.5 0 0 1 .4 17z';
+  function renderBallots() {
+    const { items, more } = ballotsOf(host.data.votes, host.data.participants);
+    const previous = new Map([...$('ballots').children].map((li) => [li.dataset.uid, li.classList.contains('is-voted')]));
+    const nodes = items.map(({ uid, voted }) => {
+      const li = el('li', { class: `ballot${voted ? ' is-voted' : ''}`, 'data-uid': uid });
+      li.append(svg('svg', { viewBox: '0 6 40 28' },
+        svg('path', { class: 'cloud-shape', d: CLOUD_BALLOT }),
+        svg('path', { class: 'tick', d: 'M13 22l4.5 4.5L27 17' })));
+      if (voted && previous.get(uid) === true) li.querySelector('svg').style.animation = 'none';
+      return li;
+    });
+    if (more) nodes.push(el('li', { class: 'ballot-more', text: `+${more}` }));
+    $('ballots').replaceChildren(...nodes);
   }
 
   /** Bulletin de révélation. */

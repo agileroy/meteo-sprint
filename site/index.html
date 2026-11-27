@@ -231,18 +231,45 @@
 
     <!-- Vue animateur -->
     <section class="screen host-screen" id="screen-host" hidden>
-      <header class="page-head">
-        <div>
-          <p class="eyebrow" id="host-team"></p>
-          <h1 id="host-title"></h1>
-        </div>
-        <div class="head-actions">
-          <a class="button button-ghost" href="./" id="host-back">Retour à l'équipe</a>
-        </div>
-      </header>
+      <div class="host-top" id="host-top">
+        <header class="hero host-hero" id="host-hero" data-sky="aube">
+          <div class="hero-sky" id="host-sky" aria-hidden="true"></div>
+          <div class="hero-content">
+            <div class="hero-top">
+              <div class="hero-title">
+                <p class="eyebrow" id="host-team"></p>
+                <h1 id="host-title"></h1>
+              </div>
+              <div class="head-actions">
+                <a class="button button-ghost button-small" href="./" id="host-back">Retour à l'équipe</a>
+              </div>
+            </div>
+            <h2 id="live-title" class="visually-hidden">Votes</h2>
+            <div class="live-row">
+              <div class="counters">
+                <p class="counter"><strong id="count-votes">0</strong><span id="count-votes-label">vote</span></p>
+                <p class="counter counter-muted"><strong id="count-online">0</strong><span id="count-online-label">connecté</span></p>
+              </div>
+              <ul class="ballots" id="ballots" aria-hidden="true"></ul>
+            </div>
+            <p class="live-hint" id="live-hint">Les météos restent cachées jusqu'à la révélation.</p>
+            <div class="countdown" id="countdown" role="status" hidden>
+              <span id="countdown-text">Tout le monde a voté : révélation dans 3 s</span>
+              <button type="button" class="button button-ghost button-small" id="countdown-hold">Attendre</button>
+            </div>
+            <div class="live-actions">
+              <button type="button" class="button button-primary button-large" id="reveal">Révéler maintenant</button>
+              <button type="button" class="button button-ghost" id="reopen" hidden>Rouvrir les votes</button>
+              <label class="switch" id="auto-switch">
+                <input type="checkbox" id="auto-reveal">
+                <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+                <span>Révélation automatique <span class="switch-hint">quand tout le monde a voté</span></span>
+              </label>
+            </div>
+          </div>
+        </header>
 
-      <div class="host-grid">
-        <section class="panel join-panel" aria-labelledby="join-title">
+        <aside class="panel join-panel" aria-labelledby="join-title">
           <h2 id="join-title">Rejoindre avec un téléphone</h2>
           <button type="button" class="qr-button" id="qr-open" aria-label="Agrandir le QR code" title="Agrandir">
             <span class="qr" id="qr"></span>
@@ -258,31 +285,9 @@
           <p class="copy-status" id="room-copy-status" role="status" aria-live="polite"></p>
           <p class="join-code-label muted">code</p>
           <p class="join-code" id="join-code"></p>
-        </section>
-
-        <section class="panel live-panel" aria-labelledby="live-title">
-          <h2 id="live-title" class="visually-hidden">Votes</h2>
-          <div class="counters">
-            <p class="counter"><strong id="count-votes">0</strong><span id="count-votes-label">vote</span></p>
-            <p class="counter counter-muted"><strong id="count-online">0</strong><span id="count-online-label">connecté</span></p>
-          </div>
-          <p class="live-hint muted" id="live-hint">Les météos restent cachées jusqu'à la révélation.</p>
-          <div class="countdown" id="countdown" role="status" hidden>
-            <span id="countdown-text">Tout le monde a voté : révélation dans 3 s</span>
-            <button type="button" class="button button-ghost button-small" id="countdown-hold">Attendre</button>
-          </div>
-          <div class="live-actions">
-            <button type="button" class="button button-primary button-large" id="reveal">Révéler maintenant</button>
-            <button type="button" class="button button-ghost" id="reopen" hidden>Rouvrir les votes</button>
-          </div>
-          <label class="switch" id="auto-switch">
-            <input type="checkbox" id="auto-reveal">
-            <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
-            <span>Révélation automatique <span class="muted small">quand tout le monde a voté</span></span>
-          </label>
-          <section id="host-results" class="results-wrap" hidden aria-label="Résultats"></section>
-        </section>
+        </aside>
       </div>
+      <section id="host-results" class="results-wrap" hidden aria-label="Résultats"></section>
     </section>
   </main>
 

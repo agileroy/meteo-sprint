@@ -304,3 +304,18 @@ export function lastWeatherText(entries) {
   if (!weather) return 'Pas encore de météo';
   return `Dernière météo : ${weather.name} · ${formatIndex(last.index)} / 5 · ${plural(entries.length, 'sprint')}`;
 }
+
+/* ---------- Vue animateur ---------- */
+
+export const BALLOTS_MAX = 24;
+
+/**
+ * Bulletins de vote anonymes : un par participant connecté ou ayant voté, triés par identifiant anonyme,
+ * { voted } seulement (jamais la météo) ; au-delà de `max`, le reste est compté dans `more`.
+ */
+export function ballotsOf(votes, participants, max = BALLOTS_MAX) {
+  const voters = new Set(Object.entries(votes ?? {}).filter(([, v]) => isValidVote(v)).map(([uid]) => uid));
+  const uids = [...new Set([...connectedUids(participants), ...voters])].sort();
+  const items = uids.map((uid) => ({ uid, voted: voters.has(uid) }));
+  return { items: items.slice(0, max), more: Math.max(0, items.length - max) };
+}

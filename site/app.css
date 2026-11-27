@@ -304,7 +304,6 @@ input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 
 
 /* ---------------------------------------------------------------- Animateur */
 
-.host-grid { display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); gap: 16px; align-items: start; }
 .join-panel { align-items: center; text-align: center; }
 /* Carte « Rejoindre avec un téléphone » : même mécanisme que le poker planning (QR code agrandissable,
    lien copié en un clic). */
@@ -316,7 +315,6 @@ input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 
 }
 .qr-button:hover { border-color: var(--accent); }
 .qr-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.host-grid.is-revealed .join-panel .qr-button { max-width: 160px; }
 .join-hint { margin: 4px 0 -4px; color: var(--muted); font-size: 0.925rem; }
 .join-url { margin: 0; font-weight: 650; overflow-wrap: anywhere; }
 .join-link { display: flex; align-items: center; justify-content: center; gap: 4px; max-width: 100%; }
@@ -411,11 +409,12 @@ input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 
 .hero-sky { position: absolute; inset: 0; overflow: hidden; pointer-events: none; container-type: size; }
 body[data-sky] .sky { display: block; }
 .sky-layer { position: absolute; inset: 0; opacity: 0; transition: opacity 0.8s ease; }
-[data-sky="neutre"] .sky-neutre, [data-sky="soleil"] .sky-soleil, [data-sky="eclaircies"] .sky-eclaircies,
+[data-sky="aube"] .sky-aube, [data-sky="neutre"] .sky-neutre, [data-sky="soleil"] .sky-soleil, [data-sky="eclaircies"] .sky-eclaircies,
 [data-sky="nuageux"] .sky-nuageux, [data-sky="pluie"] .sky-pluie, [data-sky="orage"] .sky-orage { opacity: 1; }
 
 :root {
   --sky-neutre: linear-gradient(180deg, #f3e7d3 0%, #eef1f2 100%);
+  --sky-aube: linear-gradient(180deg, #8cc3e8 0%, #c9dfee 38%, #f6d9bd 72%, #f5b98c 100%);
   --sky-soleil: linear-gradient(180deg, #4ea6e6 0%, #9fd3f6 65%, #d8f0fd 100%);
   --sky-eclaircies: linear-gradient(180deg, #78b1da 0%, #b9dbf0 70%, #e3f1f9 100%);
   --sky-nuageux: linear-gradient(180deg, #9eaab4 0%, #c9d1d8 70%, #e2e6ea 100%);
@@ -429,6 +428,7 @@ body[data-sky] .sky { display: block; }
 }
 :root[data-theme="dark"] {
   --sky-neutre: linear-gradient(180deg, #1b2330 0%, #141a22 100%);
+  --sky-aube: linear-gradient(180deg, #0f1a33 0%, #24304f 45%, #4d3a57 78%, #7a4b4f 100%);
   --sky-soleil: linear-gradient(180deg, #0c1f3d 0%, #193a66 70%, #24507f 100%);
   --sky-eclaircies: linear-gradient(180deg, #102036 0%, #1f3550 70%, #2a4560 100%);
   --sky-nuageux: linear-gradient(180deg, #1b2229 0%, #29313a 70%, #333c46 100%);
@@ -441,6 +441,7 @@ body[data-sky] .sky { display: block; }
   --sky-sun: #f3ecd2;
 }
 .sky-neutre { background: var(--sky-neutre); }
+.sky-aube { background: var(--sky-aube); }
 .sky-soleil { background: var(--sky-soleil); }
 .sky-eclaircies { background: var(--sky-eclaircies); }
 .sky-nuageux { background: var(--sky-nuageux); }
@@ -461,7 +462,7 @@ body[data-sky] .vote-screen .anon-note { background: var(--surface); border-radi
 :root[data-theme="dark"] .sky-sun .rays { display: none; }
 :root[data-theme="dark"] .sky-sun .disc { r: 26px; }
 .sky-stars { position: absolute; inset: 0 0 40% 0; display: none; }
-:root[data-theme="dark"] .sky-soleil .sky-stars, :root[data-theme="dark"] .sky-eclaircies .sky-stars { display: block; }
+:root[data-theme="dark"] .sky-soleil .sky-stars, :root[data-theme="dark"] .sky-eclaircies .sky-stars, :root[data-theme="dark"] .sky-aube .sky-stars { display: block; }
 .cloud { position: absolute; left: 0; width: var(--w, 200px); animation: drift var(--d, 90s) linear infinite; animation-delay: var(--delay, 0s); transform: translateX(var(--x, 10cqw)); }
 .cloud path { fill: var(--c, var(--sky-cloud)); }
 .drop { position: absolute; top: 0; width: 2px; height: 16px; border-radius: 2px; background: var(--sky-drop); transform: translateY(var(--y)) rotate(12deg); animation: fall var(--d, 0.9s) linear infinite; animation-delay: var(--delay, 0s); }
@@ -496,7 +497,7 @@ body[data-sky] .vote-screen .anon-note { background: var(--surface); border-radi
 .launch-form input { width: min(320px, 100%); background: var(--surface); }
 .hero-error:empty { display: none; }
 .hero-error { padding: 6px 10px; border-radius: 8px; background: var(--surface); align-self: flex-start; }
-.team-top { display: grid; grid-template-columns: minmax(0, 3fr) minmax(220px, 1fr); gap: 16px; align-items: stretch; }
+.team-top, .host-top { display: grid; grid-template-columns: minmax(0, 3fr) minmax(220px, 1fr); gap: 16px; align-items: stretch; }
 .share-card { align-items: center; text-align: center; gap: 10px; justify-content: center; }
 .share-card .qr-button { max-width: 150px; }
 .share-card .join-url { font-size: 0.88rem; }
@@ -533,13 +534,40 @@ body[data-sky] .vote-screen .anon-note { background: var(--surface); border-radi
   .forecast-card { width: 128px; }
 }
 
+/* ---------------------------------------------------------------- Vue animateur : aube et bulletins de vote */
+
+.host-hero { min-height: 300px; }
+.hero .sky-aube .sky-sun { top: auto; bottom: -9cqh; right: 9cqw; width: clamp(110px, 15cqw, 190px); }
+.host-hero .hero-content { gap: 16px; }
+.live-row { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+.host-hero .counters { width: min(340px, 100%); }
+.host-hero .counter { background: var(--surface); box-shadow: 0 1px 2px rgb(0 0 0 / 0.08); }
+.host-hero .live-hint { color: var(--sky-ink-soft); text-align: left; font-weight: 600; }
+.host-hero .live-actions { justify-content: flex-start; align-items: center; gap: 12px 18px; }
+.host-hero .switch { color: var(--sky-ink); justify-content: flex-start; flex-wrap: nowrap; }
+.host-hero .switch > span:last-child { min-width: 0; }
+.host-top.is-revealed .host-hero { min-height: 0; }
+.host-top .join-code { font-size: clamp(2rem, 1.4rem + 1.6vw, 3rem); letter-spacing: 0.14em; padding-left: 0.14em; }
+.switch-hint { color: var(--sky-ink-soft, var(--muted)); font-size: 0.875rem; font-weight: 500; }
+.host-hero .countdown { align-self: flex-start; }
+.host-hero .button-ghost { background: var(--surface); }
+
+.ballots { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; min-width: 180px; max-width: 420px; }
+.ballot { width: 50px; height: 38px; }
+.ballot svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.ballot .cloud-shape { fill: rgb(255 255 255 / 0.25); stroke: var(--sky-ink-soft); stroke-width: 1.6; stroke-dasharray: 3 3; }
+.ballot.is-voted .cloud-shape { fill: var(--surface); stroke: var(--accent); stroke-dasharray: none; }
+.ballot .tick { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; display: none; }
+.ballot.is-voted .tick { display: block; }
+.ballot.is-voted svg { animation: ballot-in 0.45s ease; }
+@keyframes ballot-in { 0% { transform: scale(0.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
+.ballot-more { align-self: center; color: var(--sky-ink); font-weight: 750; }
+
 /* ---------------------------------------------------------------- Bulletin (révélation, vue animateur) */
 
-.host-grid.is-revealed { grid-template-columns: minmax(0, 1fr); }
-.host-grid.is-revealed .join-panel { display: none; }
-.host-grid.is-revealed .counters, .host-grid.is-revealed #live-hint { display: none; }
-.host-grid.is-revealed #host-results { order: -1; }
-.host-grid.is-revealed .live-panel { padding: 0; background: transparent; border: 0; box-shadow: none; }
+.host-top.is-revealed { grid-template-columns: minmax(0, 1fr); }
+.host-top.is-revealed .join-panel, .host-top.is-revealed .live-row, .host-top.is-revealed #live-hint { display: none; }
+.host-screen #host-results { margin-top: 0; }
 
 .bulletin {
   --b-bg: #0c3a6b; --b-deep: #062544; --b-panel: #12528f; --b-land: #2a77c2; --b-coast: #8fc0ee;
@@ -584,7 +612,7 @@ body[data-sky] .vote-screen .anon-note { background: var(--surface); border-radi
 /* ---------------------------------------------------------------- Téléphone et tablette */
 
 @media (max-width: 860px) {
-  .host-grid, .team-top { grid-template-columns: minmax(0, 1fr); }
+  .host-top, .team-top { grid-template-columns: minmax(0, 1fr); }
   .results { grid-template-columns: minmax(0, 1fr); }
 }
 
