@@ -6,7 +6,7 @@ import {
   WEATHERS, STATUS, AUTO_REVEAL_DELAY_MS, FEW_VOTES, CHART_SPRINTS, NAME_MAX, normalizeCode, isValidCode, isValidTeamId,
   isValidKey, isValidVote, weatherFor, valuesOf, countsOf, totalOf, weatherIndex, formatIndex, distribution, topWeathers,
   joinNames, connectedUids, everyoneVoted, situationKey, historyList, sprintName, nextLabel, parseTeams, touchTeam,
-  removeTeam, plural, formatDate, formatDay, validateName, tickerItems, skyFor,
+  removeTeam, plural, formatDate, formatDay, validateName, tickerItems, skyFor, parseSessionId,
 } from './meteo-core.js?v=__VERSION__';
 
 const $ = (id) => document.getElementById(id);
@@ -161,7 +161,7 @@ function renderResults(container, votes, mine = null) {
  * Graphique : une colonne par sprint, haute de l'indice moyen (axe de 0 à 5), colorée à l'intérieur
  * selon la répartition des votes (de bas en haut : Orage … Grand soleil), avec l'indice au-dessus.
  */
-function renderChart(box, tip, entries, { onSelect } = {}) {
+function renderChart(box, tip, entries, { onOpen } = {}) {
   const width = Math.max(300, Math.round(box.clientWidth || 640));
   const narrow = width < 520;
   const height = narrow ? 240 : 300;
@@ -228,12 +228,12 @@ function renderChart(box, tip, entries, { onSelect } = {}) {
       el('span', { class: 'muted small', text: `${formatDay(entry.date)} · indice ${formatIndex(entry.index)} · ${plural(entry.total, 'vote')}` }),
       el('ul', {}, WEATHERS.filter((w) => entry.counts[w.key]).map((w) =>
         el('li', {}, el('span', { class: `dot dot-${w.key}` }), `${w.name} : ${entry.counts[w.key]}`))),
+      onOpen ? el('span', { class: 'tip-hint', text: 'Cliquez pour ouvrir' }) : null,
     );
     tip.hidden = false;
     const left = Math.min(Math.max((x / width) * 100, 18), 82);
     tip.style.left = `${left}%`;
     tip.style.top = `${Math.max(0, points[i][1] + 8)}px`;
-    onSelect?.(i);
   }
   function hide() {
     tip.hidden = true;
@@ -245,7 +245,10 @@ function renderChart(box, tip, entries, { onSelect } = {}) {
     group.addEventListener('pointerleave', (event) => { if (event.pointerType === 'mouse') hide(); });
     group.addEventListener('focus', () => show(i));
     group.addEventListener('blur', hide);
-    group.addEventListener('click', () => show(i));
+    group.setAttribute('role', 'link');
+    group.setAttribute('aria-label', `Ouvrir ${sprintName(entries[i])}, indice ${formatIndex(entries[i].index)}`);
+    group.addEventListener('click', () => onOpen?.(entries[i]));
+    group.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); onOpen?.(entries[i]); } });
   }
 }
 
@@ -329,8 +332,7 @@ const LAND = 'M150 28 L214 34 L252 46 L332 84 L322 132 L314 176 L346 236 L300 25
 const ISLAND = 'M376 222 l10 6 l-2 22 l-10 10 l-6 -14 z';
 
 /** Bulletin météo télé : carte de l'équipe, prévision, indice, répartition, bandeau (sans comparaison avec d'autres sprints). */
-function renderBulletin(container, { teamName, label, votes }) {
-  const counts = countsOf(valuesOf(votes));
+function renderBulletin(container, { teamName, label, counts, live = true }) {
   const total = totalOf(counts);
   const tops = topWeathers(counts);
   const index = weatherIndex(counts);
@@ -355,8 +357,8 @@ function renderBulletin(container, { teamName, label, votes }) {
   const items = tickerItems(counts);
 
   container.replaceChildren(el('div', { class: 'bulletin' },
-    el('div', { class: 'bul-top' }, el('span', { class: 'bul-live', text: 'Direct' }),
-      el('span', { text: ['Bulletin météo', teamName, label].filter(Boolean).join(' · ') })),
+    el('div', { class: 'bul-top' }, live ? el('span', { class: 'bul-live', text: 'Direct' }) : null,
+      el('span', { text: [live ? 'Bulletin météo' : 'Bilan météo', teamName, label].filter(Boolean).join(' · ') })),
     el('div', { class: 'bul-body' },
       el('div', { class: 'bul-map' }, map),
       el('div', { class: 'bul-forecast' },
@@ -439,6 +441,7 @@ export async function startApp(store, { demo = false } = {}) {
     const teamId = params.get('equipe');
     if (teamId !== null) {
       if (!isValidTeamId(teamId)) { history.replaceState(null, '', urlFor()); showHome(TEAM_NOT_FOUND); return; }
+      if (params.get('sprint') !== null) { showSprint(teamId, params.get('sprint')); return; }
       showTeam(teamId, params.get('cle'));
       return;
     }
@@ -547,11 +550,11 @@ export async function startApp(store, { demo = false } = {}) {
 
   /* ------------------------------------------------------------ Page d'équipe */
 
-  const team = { id: null, key: null, meta: null, entries: [], showAll: false, resize: null };
+  const team = { id: null, key: null, meta: null, entries: [], resize: null };
 
   async function showTeam(teamId, keyFromUrl) {
     showScreen('screen-team');
-    Object.assign(team, { id: teamId, key: null, meta: null, entries: [], showAll: false });
+    Object.assign(team, { id: teamId, key: null, meta: null, entries: [] });
     $('team-name').textContent = '';
     $('team-error-msg').hidden = true;
     $('team-owner').hidden = true;
@@ -617,9 +620,12 @@ export async function startApp(store, { demo = false } = {}) {
     observer.observe($('chart-wrap'));
   }
 
+  /** Le graphique se limite aux 10 derniers sprints ; le tableau garde tout. */
   function visibleEntries() {
-    return team.showAll ? team.entries : team.entries.slice(-CHART_SPRINTS);
+    return team.entries.slice(-CHART_SPRINTS);
   }
+
+  const openSprint = (entry) => go({ equipe: team.id, sprint: entry.sid });
 
   let lastChartWidth = 0;
   function renderChartOnly(force = false) {
@@ -627,7 +633,7 @@ export async function startApp(store, { demo = false } = {}) {
     const width = $('chart').clientWidth;
     if (!force && Math.abs(width - lastChartWidth) < 8) return;
     lastChartWidth = width;
-    renderChart($('chart'), $('chart-tip'), visibleEntries());
+    renderChart($('chart'), $('chart-tip'), visibleEntries(), { onOpen: openSprint });
   }
 
   function renderHistory() {
@@ -636,8 +642,6 @@ export async function startApp(store, { demo = false } = {}) {
     $('history-empty').hidden = entries.length > 0;
     $('chart-wrap').hidden = !entries.length;
     $('table-wrap').hidden = !entries.length;
-    $('history-all').hidden = entries.length <= CHART_SPRINTS;
-    $('history-all').textContent = team.showAll ? `${CHART_SPRINTS} derniers sprints` : 'Tout afficher';
     $('chart-tip').hidden = true;
     if (!entries.length) return;
 
@@ -659,28 +663,32 @@ export async function startApp(store, { demo = false } = {}) {
       const remove = owner ? el('button', { type: 'button', class: 'button button-ghost button-small button-danger remove-button', 'aria-label': `Retirer ${sprintName(entry)}`, title: 'Retirer de l\'historique' },
         el('span', { class: 'label-long', 'aria-hidden': 'true', text: 'Retirer' }),
         el('span', { class: 'label-short', 'aria-hidden': 'true', text: '✕' })) : null;
-      remove?.addEventListener('click', async () => {
+      remove?.addEventListener('click', async (event) => {
+        event.stopPropagation();
         if (!(await confirmAction('Retirer ce sprint ?', `« ${sprintName(entry)} » sera retiré de l'historique de l'équipe.`, 'Retirer'))) return;
         if (!(await store.removeHistory(team.id, entry.sid))) {
           $('team-error-msg').textContent = 'Retrait impossible pour l\'instant : réessayez.';
           $('team-error-msg').hidden = false;
         }
       });
-      return el('tr', {},
-        el('th', { scope: 'row', text: sprintName(entry) }),
+      const link = el('a', { class: 'sprint-link', href: urlFor({ equipe: team.id, sprint: entry.sid }), text: sprintName(entry) });
+      link.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); openSprint(entry); });
+      const row = el('tr', { title: 'Ouvrir cette météo' },
+        el('th', { scope: 'row' }, link),
         el('td', { class: 'col-date', text: formatDay(entry.date) }),
         WEATHERS.map((w) => el('td', { class: entry.counts[w.key] ? null : 'zero', text: String(entry.counts[w.key]) })),
         el('td', { text: String(entry.total) }),
         el('td', { class: 'col-index', text: formatIndex(entry.index) }),
         owner ? el('td', {}, remove) : null,
       );
+      row.addEventListener('click', () => openSprint(entry));
+      return row;
     });
     $('history-table').replaceChildren(
       el('caption', { class: 'visually-hidden', text: 'Historique des météos, du plus récent au plus ancien' }),
       el('thead', {}, head), el('tbody', {}, rows));
   }
 
-  $('history-all').addEventListener('click', () => { team.showAll = !team.showAll; renderHistory(); });
 
   $('key-toggle').addEventListener('click', () => {
     const open = $('key-row').hidden;
@@ -742,6 +750,35 @@ export async function startApp(store, { demo = false } = {}) {
       $('team-error-msg').hidden = false;
     }
   });
+
+  /* ------------------------------------------------------------ Bilan d'une météo passée */
+
+  /** Ouvre une météo de l'historique : sa vue animateur si ce navigateur l'a lancée et qu'elle existe, sinon son bilan. */
+  async function showSprint(teamId, sid) {
+    const parsed = parseSessionId(sid);
+    if (!parsed) { go({ equipe: teamId }, { replace: true }); return; }
+    $('loading').hidden = false;
+    $('loading').textContent = 'Connexion…';
+    const summary = await store.teamSummary(teamId);
+    if (summary === undefined) { showHome(UNREACHABLE); return; }
+    if (summary === null) { history.replaceState(null, '', urlFor()); showHome(TEAM_NOT_FOUND); return; }
+    const entry = historyList(summary.history).find((e) => e.sid === sid);
+    if (!entry) { go({ equipe: teamId }, { replace: true }); return; }
+    const room = await store.getMeta(parsed.code).catch(() => null);
+    const sameRoom = Boolean(room && room.createdAt === parsed.createdAt && room.teamId === teamId);
+    if (sameRoom && room.hostUid === store.uid) { go({ animer: parsed.code }, { replace: true }); return; }
+
+    showScreen('screen-sprint');
+    $('sprint-team').textContent = `${summary.name} · ${formatDate(entry.date)}`;
+    $('sprint-title').textContent = sprintName(entry);
+    document.title = `${summary.name} · ${sprintName(entry)} · Météo du sprint`;
+    $('sprint-back').href = urlFor({ equipe: teamId });
+    $('sprint-back').onclick = (event) => { event.preventDefault(); go({ equipe: teamId }); };
+    renderBulletin($('sprint-results'), { teamName: summary.name, label: sprintName(entry), counts: entry.counts, live: false });
+    $('sprint-note').textContent = sameRoom
+      ? 'Seul le navigateur qui a lancé cette météo peut rouvrir ses votes.'
+      : 'Les votes de cette météo ont été effacés : seul le bilan est conservé.';
+  }
 
   /* ------------------------------------------------------------ Vue participant */
 
@@ -928,7 +965,7 @@ export async function startApp(store, { demo = false } = {}) {
 
   /** Bulletin de révélation. */
   function renderHostBulletin() {
-    renderBulletin($('host-results'), { teamName: host.teamName, label: host.meta.label, votes: host.data.votes });
+    renderBulletin($('host-results'), { teamName: host.teamName, label: host.meta.label, counts: countsOf(valuesOf(host.data.votes)) });
   }
 
   function showHost(code) {

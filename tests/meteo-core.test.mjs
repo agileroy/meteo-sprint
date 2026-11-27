@@ -124,7 +124,7 @@ test('historique du plus ancien au plus récent, entrées invalides ignorées', 
   });
   assert.deepEqual(list.map((e) => [e.sid, e.index]), [['1800000100000-AAAA', 3], ['1800000200000-BBBB', 5]]);
   assert.equal(sprintName(list[1]), 'Sprint 2');
-  assert.match(sprintName(list[0]), /2027/);
+  assert.match(sprintName(list[0]), /^\d{1,2} \S+ \d{2}:\d{2}$/);
   assert.deepEqual(historyList(null), []);
 });
 
@@ -155,4 +155,16 @@ test('bandeau du bulletin et ciel du participant', () => {
   assert.deepEqual(tickerItems(counts), ['Grand soleil 2', 'Éclaircies 3', 'Nuageux 1', 'Pluie 0', 'Orage 0']);
   assert.equal(skyFor(null), 'neutre');
   assert.equal(skyFor(2), 'pluie');
+});
+
+import { parseSessionId, formatShort, CHART_SPRINTS } from '../site/js/meteo-core.js';
+
+test('sprint sans libellé : date courte et heure ; clé d\'historique décodée ; 10 sprints au graphique', () => {
+  const at = new Date(2026, 10, 27, 16, 20).getTime();
+  assert.equal(formatShort(at), '27 nov. 16:20');
+  assert.equal(sprintName({ label: '', date: at }), '27 nov. 16:20');
+  assert.notEqual(sprintName({ label: '', date: at + 25 * 60000 }), sprintName({ label: '', date: at }));
+  assert.deepEqual(parseSessionId('1800000000000-KRTW'), { createdAt: 1800000000000, code: 'KRTW' });
+  assert.equal(parseSessionId('pas-un-sid'), null);
+  assert.equal(CHART_SPRINTS, 10);
 });

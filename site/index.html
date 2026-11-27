@@ -163,7 +163,6 @@
       <section class="panel history-panel" aria-labelledby="history-title">
         <div class="panel-head">
           <h2 id="history-title">Évolution de l'équipe</h2>
-          <button type="button" class="button button-ghost button-small" id="history-all" hidden>Tout afficher</button>
         </div>
         <p class="muted" id="history-empty">Pas encore de météo pour cette équipe.</p>
         <div class="chart-wrap" id="chart-wrap" hidden>
@@ -176,6 +175,21 @@
           <table class="history-table" id="history-table"></table>
         </div>
       </section>
+    </section>
+
+    <!-- Bilan d'une météo passée (lecture seule) -->
+    <section class="screen" id="screen-sprint" hidden>
+      <header class="page-head">
+        <div>
+          <p class="eyebrow" id="sprint-team"></p>
+          <h1 id="sprint-title"></h1>
+        </div>
+        <div class="head-actions">
+          <a class="button button-ghost" href="./" id="sprint-back">Retour à l'équipe</a>
+        </div>
+      </header>
+      <section id="sprint-results" aria-label="Bilan de la météo"></section>
+      <p class="muted sprint-note" id="sprint-note"></p>
     </section>
 
     <!-- Vue participant -->

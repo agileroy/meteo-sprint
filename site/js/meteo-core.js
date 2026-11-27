@@ -21,7 +21,7 @@ export const KEY_LENGTH = 20;
 export const ROOM_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 export const AUTO_REVEAL_DELAY_MS = 3000;
 export const FEW_VOTES = 3;
-export const CHART_SPRINTS = 12;
+export const CHART_SPRINTS = 10;
 export const TEAMS_MAX = 50;
 export const STATUS = Object.freeze({ open: 'open', revealed: 'revealed' });
 
@@ -78,6 +78,13 @@ export function isValidKey(key) {
 /** Clé d'une entrée d'historique : heure de création de la salle et code (un code peut resservir après la purge). */
 export function sessionId(createdAt, code) {
   return `${createdAt}-${code}`;
+}
+
+/** Code et heure de création d'une clé d'historique, ou null. */
+export function parseSessionId(sid) {
+  if (!isValidSessionId(sid)) return null;
+  const [createdAt, code] = sid.split('-');
+  return { createdAt: Number(createdAt), code };
 }
 
 export function isValidSessionId(sid) {
@@ -215,9 +222,9 @@ export function historyList(history) {
     .sort((a, b) => a.date - b.date || (a.sid < b.sid ? -1 : 1));
 }
 
-/** Nom affiché d'un sprint de l'historique : son libellé, sinon sa date. */
+/** Nom affiché d'un sprint de l'historique : son libellé, sinon sa date et son heure (« 27 nov. 16:20 »). */
 export function sprintName(entry) {
-  return entry.label || formatDay(entry.date);
+  return entry.label || formatShort(entry.date);
 }
 
 /* ---------- Mes équipes (mémorisées dans le navigateur) ---------- */
@@ -253,6 +260,13 @@ export function plural(count, singular, pluralForm = `${singular}s`) {
 /** Date courte à la française : « 3 nov. 2026, 14:05 ». */
 export function formatDate(ms) {
   return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(ms));
+}
+
+/** Date courte et heure : « 27 nov. 16:20 ». */
+export function formatShort(ms) {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+    .formatToParts(new Date(ms)).map((part) => [part.type, part.value]));
+  return `${parts.day} ${parts.month} ${parts.hour}:${parts.minute}`;
 }
 
 /** Jour à la française : « 3 nov. 2026 ». */
