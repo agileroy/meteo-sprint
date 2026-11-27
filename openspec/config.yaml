@@ -1,0 +1,29 @@
+schema: spec-driven
+
+# Project context: constraints an agent cannot infer from the code.
+context: |
+  Rédiger tous les artefacts OpenSpec (proposal, design, specs, tasks) en français.
+  Météo du sprint : première partie de l'ice breaker des rétrospectives de l'auteur, sans publicité, dépôt public.
+  Chaque participant choisit anonymement, depuis son téléphone, la météo qui résume son sprint parmi 5 :
+  5 « Grand soleil », 4 « Éclaircies », 3 « Nuageux », 2 « Pluie », 1 « Orage » (indice de 1 à 5).
+  Les votes restent cachés jusqu'à ce que tout le monde ait voté (révélation automatique) ou que l'animateur
+  clique sur « Révéler maintenant » : la répartition apparaît d'un coup, pour tout le monde.
+  Une équipe garde l'historique de ses météos (répartition et indice moyen par sprint) et voit son évolution
+  dans le temps. L'historique ne contient que des totaux, jamais de vote individuel.
+  Anonymat : aucun prénom demandé ; personne (pas même l'animateur) ne peut relier une météo à une personne.
+  Hébergement : site statique sur GitHub Pages (https://agileroy.github.io/meteo-sprint/), sans serveur à maintenir.
+  Temps réel : Firebase Realtime Database (offre gratuite, connexion anonyme), branche meteo du projet
+  roti-vleroy, partagé avec le ROTI (mêmes réunions, mêmes personnes, l'un après l'autre).
+  Les règles de la branche meteo vivent dans database.rules.json du dépôt roti, seul à publier les règles
+  du projet ; ce dépôt-ci ne publie pas de règles.
+  Aucun autre service tiers (ni police web, ni CDN, ni traceur, ni publicité). N'utiliser que HTTPS (port 443).
+  Le VPN de l'entreprise (proxy Zscaler) bloque GitHub Pages et Firebase : les participants votent depuis
+  leur téléphone, via le QR code affiché par l'animateur.
+  Stack : HTML/CSS/JavaScript vanilla en modules ES, sans framework ni étape de build (dossier site/).
+  Identité visuelle des outils frères : mêmes couleurs de base, polices système, thème clair et sombre avec
+  bouton de bascule mémorisé. Icônes météo en symboles SVG dans index.html (pas d'emoji, rendu variable selon le téléphone).
+  Architecture (comme le ROTI) : site/js/meteo-core.js logique pure testée avec Node.js ; site/js/meteo-store.js
+  actions sur la base ; site/js/firebase-db.js seul module qui parle à Firebase ; site/js/memory-db.js même
+  interface en mémoire (tests et mode démo ?demo) ; site/js/ui.js interface ; graphique d'évolution en SVG fait main.
+  Interface en français, sans compte.
+  Tests : lanceur intégré de Node.js (npm test) ; la publication GitHub Actions est bloquée si un test échoue.

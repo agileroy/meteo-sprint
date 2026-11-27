@@ -1,0 +1,246 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "roti": {
+      "expiry": {
+        ".read": "auth != null",
+        "$code": {
+          ".write": "auth != null && ((!data.exists() && newData.exists()) || (!newData.exists() && (data.child('hostUid').val() === auth.uid || data.child('createdAt').val() < now - 2592000000)))",
+          ".validate": "$code.matches(/^[A-HJKMNP-Z]{4}$/) && newData.hasChildren(['createdAt', 'hostUid'])",
+          "createdAt": {
+            ".validate": "newData.isNumber() && newData.val() === now"
+          },
+          "hostUid": {
+            ".validate": "newData.isString() && newData.val() === auth.uid"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      },
+      "rooms": {
+        "$code": {
+          ".write": "auth != null && !newData.exists() && (data.child('meta/hostUid').val() === auth.uid || !root.child('roti/expiry/' + $code).exists() || root.child('roti/expiry/' + $code + '/createdAt').val() < now - 2592000000)",
+          "meta": {
+            ".read": "auth != null",
+            ".write": "auth != null && ((!data.exists() && root.child('roti/expiry/' + $code + '/hostUid').val() === auth.uid) || (data.exists() && data.child('hostUid').val() === auth.uid))",
+            ".validate": "newData.hasChildren(['hostUid', 'createdAt', 'status']) && newData.child('hostUid').val() === auth.uid",
+            "hostUid": {
+              ".validate": "newData.isString()"
+            },
+            "createdAt": {
+              ".validate": "newData.isNumber() && ((data.exists() && newData.val() === data.val()) || (!data.exists() && newData.val() === root.child('roti/expiry/' + $code + '/createdAt').val()))"
+            },
+            "title": {
+              ".validate": "newData.isString() && newData.val().length <= 80"
+            },
+            "status": {
+              ".validate": "newData.isString() && newData.val().matches(/^(open|revealed)$/)"
+            },
+            "$other": {
+              ".validate": false
+            }
+          },
+          "votes": {
+            ".read": "auth != null && (root.child('roti/rooms/' + $code + '/meta/hostUid').val() === auth.uid || root.child('roti/rooms/' + $code + '/meta/status').val() === 'revealed')",
+            "$uid": {
+              ".read": "auth != null && auth.uid === $uid",
+              ".write": "auth != null && auth.uid === $uid && root.child('roti/rooms/' + $code + '/meta/status').val() === 'open'",
+              ".validate": "newData.isNumber() && (newData.val() === 1 || newData.val() === 2 || newData.val() === 3 || newData.val() === 4 || newData.val() === 5)"
+            }
+          },
+          "comments": {
+            ".read": "auth != null && (root.child('roti/rooms/' + $code + '/meta/hostUid').val() === auth.uid || root.child('roti/rooms/' + $code + '/meta/status').val() === 'revealed')",
+            "$cid": {
+              ".read": "auth != null && root.child('roti/rooms/' + $code + '/mine/' + auth.uid).val() === $cid",
+              ".write": "auth != null && root.child('roti/rooms/' + $code + '/meta/status').val() === 'open' && newData.parent().parent().child('mine').child(auth.uid).val() === $cid",
+              ".validate": "$cid.matches(/^[a-z0-9]{20}$/) && newData.isString() && newData.val().length >= 1 && newData.val().length <= 500"
+            }
+          },
+          "mine": {
+            "$uid": {
+              ".read": "auth != null && auth.uid === $uid",
+              ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.exists() && root.child('roti/rooms/' + $code + '/meta').exists() && !root.child('roti/rooms/' + $code + '/claimed/' + newData.val()).exists() && newData.parent().parent().child('claimed').child(newData.val()).val() === true",
+              ".validate": "newData.isString() && newData.val().matches(/^[a-z0-9]{20}$/)"
+            }
+          },
+          "claimed": {
+            "$cid": {
+              ".write": "auth != null && !data.exists() && newData.parent().parent().child('mine').child(auth.uid).val() === $cid",
+              ".validate": "$cid.matches(/^[a-z0-9]{20}$/) && newData.val() === true"
+            }
+          },
+          "participants": {
+            ".read": "auth != null && root.child('roti/rooms/' + $code + '/meta/hostUid').val() === auth.uid",
+            "$uid": {
+              "connections": {
+                "$connId": {
+                  ".write": "auth != null && auth.uid === $uid && (!newData.exists() || root.child('roti/rooms/' + $code + '/meta').exists())",
+                  ".validate": "newData.val() === true"
+                }
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      },
+      "$other": {
+        ".validate": false
+      }
+    },
+    "meteo": {
+      "teams": {
+        "$teamId": {
+          ".write": "auth != null && !newData.exists() && data.child('owners').child(auth.uid).exists()",
+          ".validate": "$teamId.matches(/^[a-z0-9]{12}$/) && newData.hasChildren(['meta', 'secret'])",
+          "meta": {
+            ".read": "auth != null",
+            ".write": "auth != null && (root.child('meteo/teams/' + $teamId + '/owners/' + auth.uid).exists() || (!data.parent().exists() && newData.parent().child('secret').isString() && newData.parent().child('owners').child(auth.uid).val() === newData.parent().child('secret').val()))",
+            ".validate": "newData.hasChildren(['name', 'createdAt'])",
+            "name": {
+              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 50"
+            },
+            "createdAt": {
+              ".validate": "newData.isNumber() && ((data.exists() && newData.val() === data.val()) || (!data.exists() && newData.val() === now))"
+            },
+            "$other": {
+              ".validate": false
+            }
+          },
+          "secret": {
+            ".write": "auth != null && !data.exists() && !data.parent().exists() && newData.parent().child('owners').child(auth.uid).val() === newData.val()",
+            ".validate": "newData.isString() && newData.val().matches(/^[a-z0-9]{20}$/)"
+          },
+          "owners": {
+            "$uid": {
+              ".read": "auth != null && auth.uid === $uid",
+              ".write": "auth != null && auth.uid === $uid && (!newData.exists() || newData.val() === newData.parent().parent().child('secret').val())",
+              ".validate": "newData.isString() && newData.val().matches(/^[a-z0-9]{20}$/)"
+            }
+          },
+          "history": {
+            ".read": "auth != null",
+            "$sid": {
+              ".write": "auth != null && root.child('meteo/teams/' + $teamId + '/owners/' + auth.uid).exists()",
+              ".validate": "$sid.matches(/^[0-9]{13}-[A-HJKMNP-Z]{4}$/) && newData.hasChildren(['date', 'counts', 'total'])",
+              "label": {
+                ".validate": "newData.isString() && newData.val().length <= 40"
+              },
+              "date": {
+                ".validate": "newData.isNumber()"
+              },
+              "counts": {
+                ".validate": "newData.hasChildren(['soleil', 'eclaircies', 'nuageux', 'pluie', 'orage'])",
+                "soleil": {
+                  ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() % 1 === 0"
+                },
+                "eclaircies": {
+                  ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() % 1 === 0"
+                },
+                "nuageux": {
+                  ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() % 1 === 0"
+                },
+                "pluie": {
+                  ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() % 1 === 0"
+                },
+                "orage": {
+                  ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() % 1 === 0"
+                },
+                "$other": {
+                  ".validate": false
+                }
+              },
+              "total": {
+                ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() === newData.parent().child('counts/soleil').val() + newData.parent().child('counts/eclaircies').val() + newData.parent().child('counts/nuageux').val() + newData.parent().child('counts/pluie').val() + newData.parent().child('counts/orage').val()"
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      },
+      "expiry": {
+        ".read": "auth != null",
+        "$code": {
+          ".write": "auth != null && ((!data.exists() && newData.exists()) || (!newData.exists() && (data.child('hostUid').val() === auth.uid || data.child('createdAt').val() < now - 2592000000)))",
+          ".validate": "$code.matches(/^[A-HJKMNP-Z]{4}$/) && newData.hasChildren(['createdAt', 'hostUid'])",
+          "createdAt": {
+            ".validate": "newData.isNumber() && newData.val() === now"
+          },
+          "hostUid": {
+            ".validate": "newData.isString() && newData.val() === auth.uid"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      },
+      "sessions": {
+        "$code": {
+          ".write": "auth != null && !newData.exists() && (data.child('meta/hostUid').val() === auth.uid || !root.child('meteo/expiry/' + $code).exists() || root.child('meteo/expiry/' + $code + '/createdAt').val() < now - 2592000000)",
+          "meta": {
+            ".read": "auth != null",
+            ".write": "auth != null && ((!data.exists() && root.child('meteo/expiry/' + $code + '/hostUid').val() === auth.uid && root.child('meteo/teams/' + newData.child('teamId').val() + '/owners/' + auth.uid).exists()) || (data.exists() && data.child('hostUid').val() === auth.uid))",
+            ".validate": "newData.hasChildren(['teamId', 'hostUid', 'createdAt', 'status']) && newData.child('hostUid').val() === auth.uid",
+            "teamId": {
+              ".validate": "newData.isString() && ((data.exists() && newData.val() === data.val()) || (!data.exists() && newData.val().matches(/^[a-z0-9]{12}$/)))"
+            },
+            "hostUid": {
+              ".validate": "newData.isString()"
+            },
+            "createdAt": {
+              ".validate": "newData.isNumber() && ((data.exists() && newData.val() === data.val()) || (!data.exists() && newData.val() === root.child('meteo/expiry/' + $code + '/createdAt').val()))"
+            },
+            "label": {
+              ".validate": "newData.isString() && newData.val().length <= 40"
+            },
+            "status": {
+              ".validate": "newData.isString() && newData.val().matches(/^(open|revealed)$/)"
+            },
+            "$other": {
+              ".validate": false
+            }
+          },
+          "votes": {
+            ".read": "auth != null && (root.child('meteo/sessions/' + $code + '/meta/hostUid').val() === auth.uid || root.child('meteo/sessions/' + $code + '/meta/status').val() === 'revealed')",
+            "$uid": {
+              ".read": "auth != null && auth.uid === $uid",
+              ".write": "auth != null && auth.uid === $uid && root.child('meteo/sessions/' + $code + '/meta/status').val() === 'open'",
+              ".validate": "newData.isNumber() && (newData.val() === 1 || newData.val() === 2 || newData.val() === 3 || newData.val() === 4 || newData.val() === 5)"
+            }
+          },
+          "participants": {
+            ".read": "auth != null && root.child('meteo/sessions/' + $code + '/meta/hostUid').val() === auth.uid",
+            "$uid": {
+              "connections": {
+                "$connId": {
+                  ".write": "auth != null && auth.uid === $uid && (!newData.exists() || root.child('meteo/sessions/' + $code + '/meta').exists())",
+                  ".validate": "newData.val() === true"
+                }
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      },
+      "$other": {
+        ".validate": false
+      }
+    }
+  }
+}

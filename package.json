@@ -1,0 +1,9 @@
+{
+  "name": "meteo-sprint",
+  "private": true,
+  "type": "module",
+  "description": "Météo du sprint : ice breaker anonyme des rétrospectives, avec l'évolution de l'équipe, sans publicité",
+  "scripts": {
+    "test": "node --test"
+  }
+}
