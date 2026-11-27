@@ -6,7 +6,7 @@ import {
   WEATHERS, STATUS, AUTO_REVEAL_DELAY_MS, FEW_VOTES, CHART_SPRINTS, NAME_MAX, normalizeCode, isValidCode, isValidTeamId,
   isValidKey, isValidVote, weatherFor, valuesOf, countsOf, totalOf, weatherIndex, formatIndex, distribution, topWeathers,
   joinNames, connectedUids, everyoneVoted, situationKey, historyList, sprintName, nextLabel, parseTeams, touchTeam,
-  removeTeam, plural, formatDate, formatDay, validateName, sessionId, trendOf, trendText, tickerItems, skyFor,
+  removeTeam, plural, formatDate, formatDay, validateName, tickerItems, skyFor,
 } from './meteo-core.js?v=__VERSION__';
 
 const $ = (id) => document.getElementById(id);
@@ -328,8 +328,8 @@ const MAP_SPOTS = { soleil: [140, 96], eclaircies: [258, 92], nuageux: [272, 196
 const LAND = 'M150 28 L214 34 L252 46 L332 84 L322 132 L314 176 L346 236 L300 252 L236 270 L176 262 L140 246 L96 226 L104 176 L92 150 L52 116 L74 92 L118 82 Z';
 const ISLAND = 'M376 222 l10 6 l-2 22 l-10 10 l-6 -14 z';
 
-/** Bulletin météo télé : carte de l'équipe, prévision, indice, tendance, répartition, bandeau. */
-function renderBulletin(container, { teamName, label, votes, trend }) {
+/** Bulletin météo télé : carte de l'équipe, prévision, indice, répartition, bandeau (sans comparaison avec d'autres sprints). */
+function renderBulletin(container, { teamName, label, votes }) {
   const counts = countsOf(valuesOf(votes));
   const total = totalOf(counts);
   const tops = topWeathers(counts);
@@ -352,8 +352,7 @@ function renderBulletin(container, { teamName, label, votes, trend }) {
 
   const bar = el('div', { class: 'bul-bar', 'aria-hidden': 'true' },
     distribution(counts).filter((r) => r.count).map((r) => el('span', { class: `fill-${r.weather.key}`, style: `width:${(r.count / total) * 100}%`, title: `${r.weather.name} : ${r.count}` })));
-  const arrow = { up: '▲', down: '▼', flat: '▶' };
-  const items = tickerItems(counts, trend);
+  const items = tickerItems(counts);
 
   container.replaceChildren(el('div', { class: 'bulletin' },
     el('div', { class: 'bul-top' }, el('span', { class: 'bul-live', text: 'Direct' }),
@@ -365,7 +364,6 @@ function renderBulletin(container, { teamName, label, votes, trend }) {
         el('p', { class: 'bul-name', text: total ? joinNames(tops) : 'Aucun vote' }),
         el('p', { class: 'bul-index', 'aria-label': `Indice moyen ${formatIndex(index)} sur 5` }, el('strong', { text: formatIndex(index) }), el('span', { text: '/ 5' })),
         el('p', { class: 'bul-meta', text: `indice moyen · ${plural(total, 'vote')}` }),
-        trend ? el('p', { class: `bul-trend is-${trend.direction}` }, el('span', { 'aria-hidden': 'true', text: arrow[trend.direction] }), trendText(trend)) : null,
         bar,
         total && total < FEW_VOTES ? el('p', { class: 'bul-few', text: 'Peu de votes : chacun peut deviner le vote des autres.' }) : null,
       )),
@@ -865,7 +863,7 @@ export async function startApp(store, { demo = false } = {}) {
   /* ------------------------------------------------------------ Vue animateur */
 
   const qrReady = loadScript('vendor/qrcode-generator-1.4.4.js?v=__VERSION__');
-  const host = { code: null, joinUrl: '', teamName: '', history: [], historyLoaded: false, meta: null, data: { votes: null, participants: null }, timer: null, heldAt: null, deadline: 0 };
+  const host = { code: null, joinUrl: '', teamName: '', meta: null, data: { votes: null, participants: null }, timer: null, heldAt: null, deadline: 0 };
 
   const autoEnabled = () => readStored(AUTO_KEY) === 'on';   // désactivée par défaut
   $('auto-reveal').checked = autoEnabled();
@@ -928,25 +926,14 @@ export async function startApp(store, { demo = false } = {}) {
     checkAutoReveal();
   }
 
-  /** Bulletin de révélation, avec la tendance lue dans l'historique de l'équipe. */
+  /** Bulletin de révélation. */
   function renderHostBulletin() {
-    const { meta, data } = host;
-    const sid = sessionId(meta.createdAt, host.code);
-    const index = weatherIndex(countsOf(valuesOf(data.votes)));
-    const trend = trendOf(host.history, { sid, date: meta.createdAt, index });
-    renderBulletin($('host-results'), { teamName: host.teamName, label: meta.label, votes: data.votes, trend });
-    if (!host.historyLoaded) {
-      host.historyLoaded = true;
-      store.getHistory(meta.teamId).then((raw) => {
-        host.history = historyList(raw);
-        if (host.meta?.status === STATUS.revealed && host.meta.teamId === meta.teamId) renderHostBulletin();
-      });
-    }
+    renderBulletin($('host-results'), { teamName: host.teamName, label: host.meta.label, votes: host.data.votes });
   }
 
   function showHost(code) {
     showScreen('screen-host');
-    Object.assign(host, { code, meta: null, data: { votes: null, participants: null }, heldAt: null, teamName: '', history: [], historyLoaded: false });
+    Object.assign(host, { code, meta: null, data: { votes: null, participants: null }, heldAt: null, teamName: '' });
     stopCountdown();
     const joinUrl = absoluteUrl({ meteo: code });
     const joinLabel = joinUrl.replace(/^https?:\/\//, '');

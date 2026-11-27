@@ -37,15 +37,10 @@ La carte « Rejoindre avec un téléphone » SHALL être masquée tant que les r
 - **WHEN** l'animateur clique sur « Rouvrir les votes »
 - **THEN** le bulletin disparaît et la carte avec le QR code, le lien et le code revient
 
-### Requirement: Tendance et bandeau du bulletin
-Le bulletin SHALL indiquer la tendance par rapport au sprint précédent de l'historique de l'équipe : « En hausse », « En baisse » ou « Stable » (écart de moins de 0,1), avec l'écart et le nom du sprint précédent ; rien pour le premier sprint de l'équipe. Un bandeau en bas du bulletin SHALL faire défiler la répartition par météo et l'indice du sprint précédent ; il SHALL être fixe pour qui a demandé à réduire les animations.
+### Requirement: Bandeau du bulletin, sans comparaison
+Un bandeau en bas du bulletin SHALL faire défiler la répartition par météo du sprint révélé ; il SHALL être fixe pour qui a demandé à réduire les animations. Le bulletin MUST NOT comparer le sprint aux sprints précédents (ni tendance, ni indice d'un autre sprint) : l'évolution se lit sur la page de l'équipe.
 
-#### Scenario: Sprint en progrès
-- **GIVEN** une équipe dont le sprint précédent, « Sprint 41 », avait un indice de 3,1
-- **WHEN** la météo « Sprint 42 » est révélée avec un indice de 3,6
-- **THEN** le bulletin affiche « En hausse : +0,5 par rapport à Sprint 41 »
-
-#### Scenario: Premier sprint
-- **GIVEN** une équipe sans historique
-- **WHEN** sa première météo est révélée
-- **THEN** le bulletin n'affiche aucune tendance
+#### Scenario: Révélation sans comparaison
+- **GIVEN** une équipe dont le sprint précédent avait un indice de 3,1
+- **WHEN** la météo suivante est révélée avec un indice de 3,6
+- **THEN** le bulletin affiche « 3,6 / 5 » sans « En hausse » ni l'indice du sprint précédent, et le bandeau ne fait défiler que la répartition

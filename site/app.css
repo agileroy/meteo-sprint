@@ -505,10 +505,6 @@ body[data-sky] .vote-screen .anon-note { background: var(--surface); border-radi
 .bul-index strong { font-size: clamp(3rem, 2rem + 4vw, 5.2rem); line-height: 0.95; font-weight: 800; font-variant-numeric: tabular-nums; }
 .bul-index span { color: var(--b-soft); font-size: 1.3rem; font-weight: 700; }
 .bul-meta { color: var(--b-soft); }
-.bul-trend { display: inline-flex; align-items: center; gap: 8px; margin-top: 4px; font-weight: 700; }
-.bul-trend.is-up { color: #9be38f; }
-.bul-trend.is-down { color: #ffb0a6; }
-.bul-trend.is-flat { color: var(--b-soft); }
 .bul-bar { display: flex; height: 14px; margin-top: 10px; border-radius: 999px; overflow: hidden; background: var(--b-panel); }
 .bul-bar span { display: block; height: 100%; }
 .bul-few { margin-top: 6px; color: var(--b-soft); font-size: 0.9rem; }

@@ -262,38 +262,9 @@ export function formatDay(ms) {
 
 /* ---------- Bulletin de révélation ---------- */
 
-/** Écart en dessous duquel la tendance est « stable ». */
-export const TREND_FLAT = 0.1;
-
-/**
- * Tendance d'un sprint par rapport au précédent de l'historique (par date) :
- * { direction: 'up' | 'down' | 'flat', delta, previous } ou null pour le premier sprint.
- */
-export function trendOf(entries, { sid, date, index }) {
-  if (index === null || index === undefined) return null;
-  const previous = (entries ?? []).filter((e) => e.sid !== sid && e.date < date && e.index !== null).at(-1);
-  if (!previous) return null;
-  const delta = Math.round((index - previous.index) * 10) / 10;
-  const direction = Math.abs(delta) < TREND_FLAT ? 'flat' : (delta > 0 ? 'up' : 'down');
-  return { direction, delta: direction === 'flat' ? 0 : delta, previous };
-}
-
-/** « En hausse : +0,5 par rapport à Sprint 41 », « En baisse : −0,3 … », « Stable par rapport à … ». */
-export function trendText(trend) {
-  if (!trend) return '';
-  const name = sprintName(trend.previous);
-  if (trend.direction === 'flat') return `Stable par rapport à ${name}`;
-  const amount = formatIndex(Math.abs(trend.delta));
-  return trend.direction === 'up'
-    ? `En hausse : +${amount} par rapport à ${name}`
-    : `En baisse : −${amount} par rapport à ${name}`;
-}
-
-/** Éléments du bandeau défilant : la répartition, puis l'indice du sprint précédent. */
-export function tickerItems(counts, trend) {
-  const items = WEATHERS.map((w) => `${w.name} ${counts?.[w.key] ?? 0}`);
-  if (trend) items.push(`${sprintName(trend.previous)} : ${formatIndex(trend.previous.index)}`);
-  return items;
+/** Éléments du bandeau défilant : la répartition du sprint révélé, sans comparaison avec d'autres sprints. */
+export function tickerItems(counts) {
+  return WEATHERS.map((w) => `${w.name} ${counts?.[w.key] ?? 0}`);
 }
 
 /** Ciel de la vue participant : la météo choisie, sinon « neutre ». */
