@@ -467,6 +467,33 @@ export async function startApp(store, { demo = false } = {}) {
     showVote(code);
   }
 
+  /** Fenêtre du QR code agrandi (vue animateur et carte « Partager » de l'équipe). */
+  const qrDialog = $('qr-dialog');
+  function openQrDialog({ title, url, code = '' }) {
+    $('qr-dialog-title').textContent = title;
+    $('qr-large').innerHTML = qrSvg(url);
+    $('qr-dialog-url').textContent = url.replace(/^https?:\/\//, '');
+    $('qr-dialog-code').textContent = code;
+    $('qr-dialog-code').hidden = !code;
+    qrDialog.showModal();
+  }
+  $('qr-close').addEventListener('click', () => qrDialog.close());
+  qrDialog.addEventListener('click', (event) => { if (event.target === qrDialog) qrDialog.close(); });
+
+  /** Copie en un clic : l'icône devient une coche et « Lien copié » s'affiche 2,5 s. */
+  function wireCopy(button, status, getText) {
+    let timer;
+    button.addEventListener('click', async () => {
+      const text = getText();
+      const copied = await copyText(text);
+      button.classList.toggle('is-done', copied);
+      status.className = copied ? 'copy-status' : 'copy-status is-error';
+      status.textContent = copied ? 'Lien copié' : `Copie impossible : ${text}`;
+      clearTimeout(timer);
+      timer = setTimeout(() => { button.classList.remove('is-done'); status.textContent = ''; }, 2500);
+    });
+  }
+
   window.addEventListener('popstate', () => route());
   $('brand-link').addEventListener('click', (event) => { event.preventDefault(); go({}); });
   $('brand-link').href = urlFor();
@@ -567,10 +594,7 @@ export async function startApp(store, { demo = false } = {}) {
     $('team-owner-actions').hidden = true;
     const justCreated = Boolean(history.state?.justCreated);
     $('key-callout').hidden = !justCreated;
-    $('key-row').hidden = !justCreated;
-    $('key-toggle').setAttribute('aria-expanded', String(justCreated));
-    $('key-toggle').textContent = justCreated ? 'Masquer' : 'Afficher';
-    setShare(justCreated);
+    setKeyPanel(justCreated);
     $('team-hero').dataset.sky = 'neutre';
     $('team-last').textContent = '';
     $('forecast-panel').hidden = true;
@@ -599,8 +623,14 @@ export async function startApp(store, { demo = false } = {}) {
     if (owner) rememberTeam(teamId);
     $('team-owner').hidden = !owner;
     $('team-owner-actions').hidden = !owner;
-    $('key-section').hidden = !owner;
-    $('public-link').value = absoluteUrl({ equipe: teamId });
+    $('key-toggle').hidden = !owner;
+    if (!owner) setKeyPanel(false);
+    team.publicUrl = absoluteUrl({ equipe: teamId });
+    $('public-url').textContent = team.publicUrl.replace(/^https?:\/\//, '');
+    $('public-copy').classList.remove('is-done');
+    $('public-copy-status').textContent = '';
+    $('team-qr').innerHTML = '';
+    qrReady.then(() => { $('team-qr').innerHTML = qrSvg(team.publicUrl); });
     $('key-link').value = owner ? absoluteUrl({ equipe: teamId, cle: team.key }) : '';
 
     let first = true;
@@ -654,11 +684,10 @@ export async function startApp(store, { demo = false } = {}) {
     $('team-last').textContent = lastWeatherText(team.entries);
   }
 
-  /** Cartes « Les dernières météos », du plus ancien au plus récent, et « Prochaine météo ? » pour l'animateur. */
+  /** Cartes « Les dernières météos », du plus ancien au plus récent (lancer une météo reste dans le bandeau). */
   function renderForecast() {
-    const owner = Boolean(team.key);
     const recent = team.entries.slice(-FORECAST_CARDS);
-    $('forecast-panel').hidden = !recent.length && !owner;
+    $('forecast-panel').hidden = !recent.length;
     const cards = recent.map((entry, i) => {
       const weather = weatherOfEntry(entry);
       const latest = i === recent.length - 1;
@@ -673,12 +702,6 @@ export async function startApp(store, { demo = false } = {}) {
       card.addEventListener('click', () => openSprint(entry));
       return el('li', {}, card);
     });
-    if (owner) {
-      const next = el('button', { type: 'button', class: 'forecast-card forecast-next' },
-        el('span', { class: 'plus', 'aria-hidden': 'true', text: '+' }), 'Prochaine météo ?');
-      next.addEventListener('click', () => { $('label-input').focus(); $('label-input').select(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
-      cards.push(el('li', {}, next));
-    }
     $('forecast').replaceChildren(...cards);
   }
 
@@ -738,22 +761,21 @@ export async function startApp(store, { demo = false } = {}) {
   }
 
 
-  function setShare(open) {
-    $('share-panel').hidden = !open;
-    $('share-toggle').setAttribute('aria-expanded', String(open));
-  }
-  $('share-toggle').addEventListener('click', () => {
-    const open = $('share-panel').hidden;
-    setShare(open);
-    if (open) $('share-panel').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  });
-
-  $('key-toggle').addEventListener('click', () => {
-    const open = $('key-row').hidden;
-    $('key-row').hidden = !open;
+  /** Encart « Lien d'animation » (ouvert d'office juste après la création de l'équipe). */
+  function setKeyPanel(open) {
+    $('key-panel').hidden = !open;
     $('key-toggle').setAttribute('aria-expanded', String(open));
-    $('key-toggle').textContent = open ? 'Masquer' : 'Afficher';
+  }
+  $('key-toggle').addEventListener('click', () => {
+    const open = $('key-panel').hidden;
+    $('key-callout').hidden = true;
+    setKeyPanel(open);
+    if (open) $('key-panel').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   });
+  $('key-close').addEventListener('click', () => { setKeyPanel(false); $('key-toggle').focus(); });
+  wireCopy($('public-copy'), $('public-copy-status'), () => team.publicUrl);
+  $('team-qr-open').addEventListener('click', () => openQrDialog({ title: 'Consulter l\'historique', url: team.publicUrl }));
+
   for (const button of document.querySelectorAll('[data-copy]')) {
     button.addEventListener('click', async () => {
       const input = $(button.dataset.copy);
@@ -1034,17 +1056,13 @@ export async function startApp(store, { demo = false } = {}) {
     const joinLabel = joinUrl.replace(/^https?:\/\//, '');
     host.joinUrl = joinUrl;
     $('join-code').textContent = code;
-    $('qr-dialog-code').textContent = code;
     $('join-url').textContent = joinLabel;
-    $('qr-dialog-url').textContent = joinLabel;
     $('room-copy').classList.remove('is-done');
     $('room-copy-status').textContent = '';
     $('qr').innerHTML = '';
-    $('qr-large').innerHTML = '';
     qrReady.then(() => {
       const qr = qrSvg(joinUrl);
       $('qr').innerHTML = qr;
-      $('qr-large').innerHTML = qr;
       $('qr-open').hidden = !qr;
     });
     $('host-results').hidden = true;
@@ -1077,24 +1095,8 @@ export async function startApp(store, { demo = false } = {}) {
     event.preventDefault();
     if (host.meta) go({ equipe: host.meta.teamId });
   });
-  const qrDialog = $('qr-dialog');
-  $('qr-open').addEventListener('click', () => qrDialog.showModal());
-  $('qr-close').addEventListener('click', () => qrDialog.close());
-  qrDialog.addEventListener('click', (event) => { if (event.target === qrDialog) qrDialog.close(); });
-
-  // Copier le lien en un clic, depuis la carte du QR code.
-  let copyTimer;
-  $('room-copy').addEventListener('click', async () => {
-    const copied = await copyText(host.joinUrl);
-    $('room-copy').classList.toggle('is-done', copied);
-    $('room-copy-status').className = copied ? 'copy-status' : 'copy-status is-error';
-    $('room-copy-status').textContent = copied ? 'Lien copié' : `Copie impossible : ${host.joinUrl}`;
-    clearTimeout(copyTimer);
-    copyTimer = setTimeout(() => {
-      $('room-copy').classList.remove('is-done');
-      $('room-copy-status').textContent = '';
-    }, 2500);
-  });
+  $('qr-open').addEventListener('click', () => openQrDialog({ title: 'Rejoindre avec un téléphone', url: host.joinUrl, code: host.code }));
+  wireCopy($('room-copy'), $('room-copy-status'), () => host.joinUrl);
 
   $('reveal').addEventListener('click', doReveal);
   $('reopen').addEventListener('click', async () => {

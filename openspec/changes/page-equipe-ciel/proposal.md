@@ -5,8 +5,8 @@ La page d'équipe est monotone à côté du vote (ciel vivant) et de la révéla
 ## What Changes
 
 - **En-tête « ciel de l'équipe »** : le haut de page devient le ciel de la dernière météo de l'équipe (mêmes ciels que la vue participant), avec le nom, la dernière météo (« Grand soleil · 4,7 / 5 · 3 sprints ») et l'action principale « Lancer une météo » (libellé facultatif).
-- **Bouton « Partager »** : le lien public et le lien d'animation passent dans un panneau qui s'ouvre à la demande (ouvert d'office juste après la création de l'équipe).
-- **Cartes « Les dernières météos »** : les 6 derniers sprints en cartes, comme les prévisions d'une appli météo (icône, indice en grand, météo), la plus récente mise en avant ; un clic ouvre la météo ; une carte « Prochaine météo ? » pour l'animateur.
+- **Carte « Partager » toujours visible** à droite du bandeau (trois quarts / un quart) : QR code et lien public copiable en un clic, comme la carte « Rejoindre » ; « Lien d'animation » ouvre un encart (ouvert d'office juste après la création de l'équipe). Retour de l'auteur : un premier panneau « Partager » à déplier a été écarté.
+- **Cartes « Les dernières météos »** : les 6 derniers sprints en cartes, comme les prévisions d'une appli météo (icône, indice en grand, météo), la plus récente mise en avant ; un clic ouvre la météo. Pas de carte « Prochaine météo ? » : elle doublonnait « Lancer une météo » du bandeau (retour de l'auteur).
 - **Graphique** : chaque colonne est coiffée de l'icône de sa météo.
 
 ## Capabilities

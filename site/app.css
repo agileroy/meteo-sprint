@@ -494,11 +494,15 @@ body[data-sky] .vote-screen .anon-note { background: var(--surface); border-radi
 .launch-form { display: flex; flex-wrap: nowrap; gap: 8px; }
 .launch-form .button { white-space: nowrap; }
 .launch-form input { width: min(320px, 100%); background: var(--surface); }
-.share-toggle { display: inline-flex; align-items: center; gap: 8px; }
-.share-toggle[aria-expanded="true"] { border-color: var(--accent); }
 .hero-error:empty { display: none; }
 .hero-error { padding: 6px 10px; border-radius: 8px; background: var(--surface); align-self: flex-start; }
-.share-panel { gap: 14px; }
+.team-top { display: grid; grid-template-columns: minmax(0, 3fr) minmax(220px, 1fr); gap: 16px; align-items: stretch; }
+.share-card { align-items: center; text-align: center; gap: 10px; justify-content: center; }
+.share-card .qr-button { max-width: 150px; }
+.share-card .join-url { font-size: 0.88rem; }
+.key-panel { gap: 10px; }
+.key-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.key-callout:not([hidden]) + .key-help, .key-callout:not([hidden]) ~ #key-help { display: none; }
 
 .forecast-panel { gap: 14px; }
 .forecast { display: flex; gap: 12px; overflow-x: auto; padding: 2px 2px 6px; scroll-snap-type: x proximity; }
@@ -516,8 +520,6 @@ body[data-sky] .vote-screen .anon-note { background: var(--surface); border-radi
 .fc-name { color: var(--muted); font-size: 0.88rem; }
 .forecast-card.is-latest { border: 2px solid var(--w-soleil); background: var(--sun-soft); }
 .forecast-card.is-latest .fc-label { color: var(--text); }
-.forecast-next { justify-content: center; min-height: 100%; border-style: dashed; border-width: 2px; color: var(--muted); font-weight: 650; background: transparent; }
-.forecast-next .plus { font-size: 1.8rem; line-height: 1; }
 
 .chart .col-icon { pointer-events: none; }
 
@@ -582,7 +584,7 @@ body[data-sky] .vote-screen .anon-note { background: var(--surface); border-radi
 /* ---------------------------------------------------------------- Téléphone et tablette */
 
 @media (max-width: 860px) {
-  .host-grid { grid-template-columns: minmax(0, 1fr); }
+  .host-grid, .team-top { grid-template-columns: minmax(0, 1fr); }
   .results { grid-template-columns: minmax(0, 1fr); }
 }
 

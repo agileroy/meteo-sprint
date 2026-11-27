@@ -16,16 +16,24 @@ Pour un animateur, le bandeau SHALL porter l'action principale : un champ de lib
 - **WHEN** un membre l'ouvre
 - **THEN** il voit le bandeau sans champ de libellé ni bouton « Lancer une météo », « Renommer » ou « Supprimer l'équipe »
 
-### Requirement: Partager
-Un bouton « Partager » SHALL ouvrir et fermer un panneau avec le lien public de l'équipe et, pour un animateur, le lien d'animation, chacun copiable. Juste après la création de l'équipe, le panneau SHALL être ouvert avec le lien d'animation visible et le message « Gardez ce lien ».
+### Requirement: Carte « Partager » toujours visible
+À côté du bandeau (un quart de la largeur sur ordinateur, dessous sur téléphone), une carte « Partager » SHALL toujours montrer le QR code du lien public de l'équipe, agrandissable d'un clic, et ce lien suivi d'un bouton qui le copie en un clic (« Lien copié »), comme la carte « Rejoindre » de la vue animateur.
+
+#### Scenario: Partager l'historique
+- **GIVEN** la page d'une équipe
+- **WHEN** l'animateur clique sur le bouton de copie de la carte « Partager »
+- **THEN** le lien public est copié et « Lien copié » s'affiche
+
+### Requirement: Lien d'animation à la demande
+Pour un animateur, la carte « Partager » SHALL proposer « Lien d'animation », qui ouvre un encart pleine largeur avec ce lien, copiable, et l'explication de son usage. Juste après la création de l'équipe, cet encart SHALL être ouvert avec le message « Gardez ce lien ». Le lien public ne SHALL pas proposer le lien d'animation.
 
 #### Scenario: Équipe qui vient d'être créée
 - **GIVEN** l'accueil
 - **WHEN** l'animateur crée l'équipe « Phénix »
-- **THEN** la page de l'équipe s'ouvre avec le panneau « Partager » ouvert et le lien d'animation affiché
+- **THEN** la page de l'équipe s'ouvre avec l'encart du lien d'animation ouvert et « Gardez ce lien »
 
 ### Requirement: Cartes des dernières météos
-La page d'équipe SHALL montrer les 6 derniers sprints en cartes, du plus ancien au plus récent, chacune avec le nom du sprint, l'icône de sa météo, son indice en grand et le nom de sa météo ; la plus récente SHALL être mise en avant. Cliquer une carte SHALL ouvrir la météo comme depuis le tableau. Pour un animateur, une dernière carte « Prochaine météo ? » SHALL placer le curseur dans le champ du libellé.
+La page d'équipe SHALL montrer les 6 derniers sprints en cartes, du plus ancien au plus récent, chacune avec le nom du sprint, l'icône de sa météo, son indice en grand et le nom de sa météo ; la plus récente SHALL être mise en avant. Cliquer une carte SHALL ouvrir la météo comme depuis le tableau. Les cartes ne SHALL pas proposer de lancer une météo : cette action reste unique, dans le bandeau.
 
 #### Scenario: Ouvrir depuis une carte
 - **GIVEN** une équipe avec 3 sprints
