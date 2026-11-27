@@ -401,6 +401,128 @@ input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 
 .bar-count { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 600; white-space: nowrap; }
 .bar-count strong { color: var(--text); }
 
+/* ---------------------------------------------------------------- Ciel vivant (vue participant) */
+
+.sky { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; display: none; }
+body[data-sky] .sky { display: block; }
+.sky-layer { position: absolute; inset: 0; opacity: 0; transition: opacity 0.8s ease; }
+body[data-sky="neutre"] .sky-neutre, body[data-sky="soleil"] .sky-soleil, body[data-sky="eclaircies"] .sky-eclaircies,
+body[data-sky="nuageux"] .sky-nuageux, body[data-sky="pluie"] .sky-pluie, body[data-sky="orage"] .sky-orage { opacity: 1; }
+
+:root {
+  --sky-neutre: linear-gradient(180deg, #f3e7d3 0%, #eef1f2 100%);
+  --sky-soleil: linear-gradient(180deg, #4ea6e6 0%, #9fd3f6 65%, #d8f0fd 100%);
+  --sky-eclaircies: linear-gradient(180deg, #78b1da 0%, #b9dbf0 70%, #e3f1f9 100%);
+  --sky-nuageux: linear-gradient(180deg, #9eaab4 0%, #c9d1d8 70%, #e2e6ea 100%);
+  --sky-pluie: linear-gradient(180deg, #5f6f7d 0%, #8a98a5 70%, #a9b4bd 100%);
+  --sky-orage: linear-gradient(180deg, #2c313d 0%, #4a4f5c 65%, #62666f 100%);
+  --sky-cloud: #ffffff;
+  --sky-cloud-dark: #8e9aa5;
+  --sky-storm-cloud: #3d424d;
+  --sky-drop: rgb(225 236 245 / 0.75);
+  --sky-sun: #ffc93a;
+}
+:root[data-theme="dark"] {
+  --sky-neutre: linear-gradient(180deg, #1b2330 0%, #141a22 100%);
+  --sky-soleil: linear-gradient(180deg, #0c1f3d 0%, #193a66 70%, #24507f 100%);
+  --sky-eclaircies: linear-gradient(180deg, #102036 0%, #1f3550 70%, #2a4560 100%);
+  --sky-nuageux: linear-gradient(180deg, #1b2229 0%, #29313a 70%, #333c46 100%);
+  --sky-pluie: linear-gradient(180deg, #121820 0%, #1f2730 70%, #29323c 100%);
+  --sky-orage: linear-gradient(180deg, #08090d 0%, #161921 65%, #1f222b 100%);
+  --sky-cloud: #c9d1d8;
+  --sky-cloud-dark: #56616c;
+  --sky-storm-cloud: #2a2e37;
+  --sky-drop: rgb(170 190 210 / 0.55);
+  --sky-sun: #f3ecd2;
+}
+.sky-neutre { background: var(--sky-neutre); }
+.sky-soleil { background: var(--sky-soleil); }
+.sky-eclaircies { background: var(--sky-eclaircies); }
+.sky-nuageux { background: var(--sky-nuageux); }
+.sky-pluie { background: var(--sky-pluie); }
+.sky-orage { background: var(--sky-orage); }
+
+/* Encre du titre, contrastée sur chaque ciel. */
+body[data-sky] { --sky-ink: #1f2a33; --sky-ink-soft: #3d4a55; }
+body[data-sky="pluie"], body[data-sky="orage"],
+:root[data-theme="dark"] body[data-sky] { --sky-ink: #f4f7fa; --sky-ink-soft: #d3dbe2; }
+body[data-sky] .brand, body[data-sky] .vote-head h1 { color: var(--sky-ink); }
+body[data-sky] .vote-head .eyebrow { color: var(--sky-ink-soft); }
+body[data-sky] .vote-screen .anon-note { background: var(--surface); border-radius: 10px; padding: 10px 12px; color: var(--muted); }
+
+.sky-sun { position: absolute; top: 6vh; right: 8vw; width: clamp(110px, 16vw, 220px); }
+.sky-sun .rays { transform-origin: 50% 50%; animation: spin 90s linear infinite; }
+.sky-sun-small { top: 8vh; right: 18vw; width: clamp(80px, 11vw, 150px); }
+:root[data-theme="dark"] .sky-sun .rays { display: none; }
+:root[data-theme="dark"] .sky-sun .disc { r: 26px; }
+.sky-stars { position: absolute; inset: 0 0 40% 0; display: none; }
+:root[data-theme="dark"] .sky-soleil .sky-stars, :root[data-theme="dark"] .sky-eclaircies .sky-stars { display: block; }
+.cloud { position: absolute; left: 0; width: var(--w, 200px); animation: drift var(--d, 90s) linear infinite; animation-delay: var(--delay, 0s); transform: translateX(var(--x, 10vw)); }
+.cloud path { fill: var(--c, var(--sky-cloud)); }
+.drop { position: absolute; top: 0; width: 2px; height: 16px; border-radius: 2px; background: var(--sky-drop); transform: translateY(var(--y)) rotate(12deg); animation: fall var(--d, 0.9s) linear infinite; animation-delay: var(--delay, 0s); }
+.flash { position: absolute; inset: 0; background: #fff; opacity: 0; animation: flash 7s ease-out infinite; }
+.bolt { position: absolute; top: 22vh; left: 22vw; width: clamp(40px, 5vw, 70px); opacity: 0; animation: bolt 7s ease-out infinite; }
+@keyframes drift { from { transform: translateX(-35vw); } to { transform: translateX(110vw); } }
+@keyframes fall { from { transform: translateY(-10vh) rotate(12deg); } to { transform: translateY(110vh) rotate(12deg); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes flash { 0%, 90% { opacity: 0; } 91% { opacity: 0.45; } 92% { opacity: 0.05; } 93.5% { opacity: 0.3; } 100% { opacity: 0; } }
+@keyframes bolt { 0%, 90% { opacity: 0; } 91%, 94% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .flash, .bolt { display: none; }
+}
+
+/* ---------------------------------------------------------------- Bulletin (révélation, vue animateur) */
+
+.host-grid.is-revealed { grid-template-columns: minmax(0, 1fr); }
+.host-grid.is-revealed .join-panel { display: none; }
+.host-grid.is-revealed .counters, .host-grid.is-revealed #live-hint { display: none; }
+.host-grid.is-revealed #host-results { order: -1; }
+.host-grid.is-revealed .live-panel { padding: 0; background: transparent; border: 0; box-shadow: none; }
+
+.bulletin {
+  --b-bg: #0c3a6b; --b-deep: #062544; --b-panel: #12528f; --b-land: #2a77c2; --b-coast: #8fc0ee;
+  --b-text: #ffffff; --b-soft: #b9d7f3; --b-yellow: #fac775; --b-ink: #3d2603;
+  display: flex; flex-direction: column; overflow: hidden; border-radius: 16px; background: var(--b-bg); color: var(--b-text);
+  box-shadow: var(--shadow);
+}
+.bul-top {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 20px; background: var(--b-deep);
+  color: var(--b-yellow); font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; font-size: clamp(0.85rem, 0.7rem + 0.5vw, 1.05rem);
+}
+.bul-live { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 6px; background: #c2382b; color: #fff; font-size: 0.75rem; letter-spacing: 0.1em; }
+.bul-live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: blink 1.4s steps(2) infinite; }
+@keyframes blink { 50% { opacity: 0.2; } }
+.bul-body { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 24px; padding: 22px 24px; align-items: center; }
+.bul-map { border-radius: 14px; background: var(--b-panel); padding: 10px; }
+.bul-map svg { display: block; width: 100%; height: auto; }
+.bul-map .land { fill: var(--b-land); stroke: var(--b-coast); stroke-width: 3; stroke-linejoin: round; }
+.bul-map .grid { stroke: rgb(255 255 255 / 0.08); stroke-width: 1; }
+.bul-map .count { fill: #fff; font: 800 15px var(--font); paint-order: stroke; stroke: var(--b-deep); stroke-width: 4px; }
+.bul-forecast { display: flex; flex-direction: column; gap: 6px; }
+.bul-kicker { color: var(--b-soft); font-weight: 650; }
+.bul-name { font-size: clamp(1.6rem, 1.1rem + 2vw, 2.6rem); font-weight: 800; line-height: 1.1; }
+.bul-index { display: flex; align-items: baseline; gap: 8px; margin-top: 6px; }
+.bul-index strong { font-size: clamp(3rem, 2rem + 4vw, 5.2rem); line-height: 0.95; font-weight: 800; font-variant-numeric: tabular-nums; }
+.bul-index span { color: var(--b-soft); font-size: 1.3rem; font-weight: 700; }
+.bul-meta { color: var(--b-soft); }
+.bul-trend { display: inline-flex; align-items: center; gap: 8px; margin-top: 4px; font-weight: 700; }
+.bul-trend.is-up { color: #9be38f; }
+.bul-trend.is-down { color: #ffb0a6; }
+.bul-trend.is-flat { color: var(--b-soft); }
+.bul-bar { display: flex; height: 14px; margin-top: 10px; border-radius: 999px; overflow: hidden; background: var(--b-panel); }
+.bul-bar span { display: block; height: 100%; }
+.bul-few { margin-top: 6px; color: var(--b-soft); font-size: 0.9rem; }
+.bul-ticker { overflow: hidden; background: var(--b-yellow); color: var(--b-ink); font-weight: 700; white-space: nowrap; }
+.bul-track { display: inline-flex; gap: 0; padding: 10px 0; animation: ticker 28s linear infinite; }
+.bul-ticker:hover .bul-track { animation-play-state: paused; }
+.bul-track span { padding: 0 22px; }
+.bul-track span::after { content: "•"; margin-left: 44px; opacity: 0.5; }
+@keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+@media (max-width: 860px) {
+  .bul-body { grid-template-columns: minmax(0, 1fr); padding: 16px; gap: 16px; }
+}
+
 /* ---------------------------------------------------------------- Téléphone et tablette */
 
 @media (max-width: 860px) {

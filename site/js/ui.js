@@ -6,7 +6,7 @@ import {
   WEATHERS, STATUS, AUTO_REVEAL_DELAY_MS, FEW_VOTES, CHART_SPRINTS, NAME_MAX, normalizeCode, isValidCode, isValidTeamId,
   isValidKey, isValidVote, weatherFor, valuesOf, countsOf, totalOf, weatherIndex, formatIndex, distribution, topWeathers,
   joinNames, connectedUids, everyoneVoted, situationKey, historyList, sprintName, nextLabel, parseTeams, touchTeam,
-  removeTeam, plural, formatDate, formatDay, validateName,
+  removeTeam, plural, formatDate, formatDay, validateName, sessionId, trendOf, trendText, tickerItems, skyFor,
 } from './meteo-core.js?v=__VERSION__';
 
 const $ = (id) => document.getElementById(id);
@@ -249,6 +249,131 @@ function renderChart(box, tip, entries, { onSelect } = {}) {
   }
 }
 
+
+/* ---------------------------------------------------------------- Ciel vivant */
+
+const CLOUD_D = 'M15 38a7 7 0 0 1-.6-14A10 10 0 0 1 33.6 21a8.5 8.5 0 0 1 .4 17z';
+
+/** Générateur pseudo-aléatoire déterministe : le ciel est le même à chaque chargement. */
+function seeded(seed) {
+  let x = seed;
+  return () => { x = (x * 16807) % 2147483647; return (x - 1) / 2147483646; };
+}
+
+function cloud({ w, x, top, d, delay, color = null, opacity = 1 }) {
+  const node = svg('svg', { class: 'cloud', viewBox: '6 12 38 28', style: `--w:${w}px;--x:${x}vw;--d:${d}s;--delay:${delay}s;top:${top}vh;opacity:${opacity};${color ? `--c:${color};` : ''}` },
+    svg('path', { d: CLOUD_D }));
+  return node;
+}
+
+function sun(className = 'sky-sun') {
+  return svg('svg', { class: className, viewBox: '0 0 100 100' },
+    svg('g', { class: 'rays', stroke: 'var(--sky-sun)', 'stroke-width': '5', 'stroke-linecap': 'round', opacity: '0.85' },
+      ...Array.from({ length: 12 }, (_, i) => {
+        const a = (i * Math.PI) / 6;
+        return svg('line', { x1: 50 + Math.cos(a) * 34, y1: 50 + Math.sin(a) * 34, x2: 50 + Math.cos(a) * 46, y2: 50 + Math.sin(a) * 46 });
+      })),
+    svg('circle', { class: 'disc', cx: '50', cy: '50', r: '24', fill: 'var(--sky-sun)' }));
+}
+
+function stars(random) {
+  const box = svg('svg', { class: 'sky-stars', viewBox: '0 0 100 60', preserveAspectRatio: 'none' });
+  for (let i = 0; i < 40; i += 1) box.append(svg('circle', { cx: (random() * 100).toFixed(1), cy: (random() * 60).toFixed(1), r: (0.12 + random() * 0.18).toFixed(2), fill: '#fff', opacity: (0.4 + random() * 0.5).toFixed(2) }));
+  return box;
+}
+
+function clouds(random, count, { minW, maxW, maxTop, color = null, opacity = 1, speed = [70, 130] }) {
+  return Array.from({ length: count }, (_, i) => {
+    const d = speed[0] + random() * (speed[1] - speed[0]);
+    return cloud({
+      w: Math.round(minW + random() * (maxW - minW)), x: Math.round(((i + 0.5) / count) * 90 - 5), top: (random() * maxTop).toFixed(1),
+      d: d.toFixed(0), delay: (-random() * d).toFixed(1), color, opacity,
+    });
+  });
+}
+
+function rain(random, count) {
+  return Array.from({ length: count }, () => el('span', {
+    class: 'drop',
+    style: `left:${(random() * 100).toFixed(1)}vw;--y:${(random() * 100).toFixed(0)}vh;--d:${(0.7 + random() * 0.5).toFixed(2)}s;--delay:${(-random() * 1.2).toFixed(2)}s;`,
+  }));
+}
+
+/** Construit une fois les six calques du ciel (neutre et une par météo). */
+function buildSky(container) {
+  const r = seeded(42);
+  const layer = (key, ...children) => el('div', { class: `sky-layer sky-${key}` }, ...children);
+  const bolt = svg('svg', { class: 'bolt', viewBox: '0 0 20 40' }, svg('path', { d: 'M12 0 2 22h7l-3 18 12-25h-7l5-15z', fill: '#ffe066' }));
+  container.replaceChildren(
+    layer('neutre', clouds(r, 2, { minW: 160, maxW: 240, maxTop: 30, opacity: 0.55, speed: [120, 180] })),
+    layer('soleil', stars(r), sun(), clouds(r, 2, { minW: 120, maxW: 180, maxTop: 35, opacity: 0.9, speed: [110, 160] })),
+    layer('eclaircies', stars(r), sun('sky-sun sky-sun-small'), clouds(r, 5, { minW: 150, maxW: 280, maxTop: 45 })),
+    layer('nuageux', clouds(r, 4, { minW: 220, maxW: 360, maxTop: 25, color: 'var(--sky-cloud-dark)', speed: [90, 140] }),
+      clouds(r, 5, { minW: 180, maxW: 320, maxTop: 55 })),
+    layer('pluie', clouds(r, 6, { minW: 240, maxW: 420, maxTop: 20, color: 'var(--sky-cloud-dark)', speed: [80, 120] }), rain(r, 70)),
+    layer('orage', el('div', { class: 'flash' }), clouds(r, 6, { minW: 260, maxW: 440, maxTop: 18, color: 'var(--sky-storm-cloud)', speed: [60, 100] }), bolt, rain(r, 90)),
+  );
+}
+
+/** Ciel affiché : une météo, « neutre », ou aucun (null) hors de la vue participant. */
+function setSky(key) {
+  if (key) document.body.dataset.sky = key;
+  else delete document.body.dataset.sky;
+}
+
+/* ---------------------------------------------------------------- Bulletin de révélation */
+
+const MAP_SPOTS = { soleil: [140, 96], eclaircies: [258, 92], nuageux: [272, 196], pluie: [184, 170], orage: [150, 228] };
+// « Hexagone » stylisé, façon bulletin télé, et une petite île.
+const LAND = 'M150 28 L214 34 L252 46 L332 84 L322 132 L314 176 L346 236 L300 252 L236 270 L176 262 L140 246 L96 226 L104 176 L92 150 L52 116 L74 92 L118 82 Z';
+const ISLAND = 'M376 222 l10 6 l-2 22 l-10 10 l-6 -14 z';
+
+/** Bulletin météo télé : carte de l'équipe, prévision, indice, tendance, répartition, bandeau. */
+function renderBulletin(container, { teamName, label, votes, trend }) {
+  const counts = countsOf(valuesOf(votes));
+  const total = totalOf(counts);
+  const tops = topWeathers(counts);
+  const index = weatherIndex(counts);
+
+  const map = svg('svg', { viewBox: '0 0 420 290', role: 'img', 'aria-label': `Carte de l'équipe : ${distribution(counts).filter((r) => r.count).map((r) => `${r.weather.name} ${r.count}`).join(', ')}` });
+  for (let x = 30; x < 420; x += 40) map.append(svg('line', { class: 'grid', x1: x, y1: 0, x2: x, y2: 290 }));
+  for (let y = 25; y < 290; y += 40) map.append(svg('line', { class: 'grid', x1: 0, y1: y, x2: 420, y2: y }));
+  map.append(svg('path', { class: 'land', d: LAND }), svg('path', { class: 'land', d: ISLAND }));
+  for (const w of WEATHERS) {
+    const count = counts[w.key];
+    if (!count) continue;
+    const size = 46 + 70 * (count / total);
+    const [cx, cy] = MAP_SPOTS[w.key];
+    map.append(svg('use', { href: `#w-${w.key}`, x: cx - size / 2, y: cy - size / 2, width: size, height: size }));
+    const t = svg('text', { class: 'count', x: cx + size / 2 - 6, y: cy + size / 2 - 2, 'text-anchor': 'middle' });
+    t.textContent = `×${count}`;
+    map.append(t);
+  }
+
+  const bar = el('div', { class: 'bul-bar', 'aria-hidden': 'true' },
+    distribution(counts).filter((r) => r.count).map((r) => el('span', { class: `fill-${r.weather.key}`, style: `width:${(r.count / total) * 100}%`, title: `${r.weather.name} : ${r.count}` })));
+  const arrow = { up: '▲', down: '▼', flat: '▶' };
+  const items = tickerItems(counts, trend);
+
+  container.replaceChildren(el('div', { class: 'bulletin' },
+    el('div', { class: 'bul-top' }, el('span', { class: 'bul-live', text: 'Direct' }),
+      el('span', { text: ['Bulletin météo', teamName, label].filter(Boolean).join(' · ') })),
+    el('div', { class: 'bul-body' },
+      el('div', { class: 'bul-map' }, map),
+      el('div', { class: 'bul-forecast' },
+        el('p', { class: 'bul-kicker', text: 'Prévision de l\'équipe' }),
+        el('p', { class: 'bul-name', text: total ? joinNames(tops) : 'Aucun vote' }),
+        el('p', { class: 'bul-index', 'aria-label': `Indice moyen ${formatIndex(index)} sur 5` }, el('strong', { text: formatIndex(index) }), el('span', { text: '/ 5' })),
+        el('p', { class: 'bul-meta', text: `indice moyen · ${plural(total, 'vote')}` }),
+        trend ? el('p', { class: `bul-trend is-${trend.direction}` }, el('span', { 'aria-hidden': 'true', text: arrow[trend.direction] }), trendText(trend)) : null,
+        bar,
+        total && total < FEW_VOTES ? el('p', { class: 'bul-few', text: 'Peu de votes : chacun peut deviner le vote des autres.' }) : null,
+      )),
+    el('div', { class: 'bul-ticker', 'aria-label': items.join(', ') },
+      el('div', { class: 'bul-track', 'aria-hidden': 'true' }, [...items, ...items].map((text) => el('span', { text })))),
+  ));
+}
+
 /* ---------------------------------------------------------------- Application */
 
 export function showFatal(message) {
@@ -262,6 +387,7 @@ export async function startApp(store, { demo = false } = {}) {
   let teardown = null;
 
   $('demo-chip').hidden = !demo;
+  buildSky($('sky'));
 
   try {
     await Promise.race([
@@ -301,6 +427,7 @@ export async function startApp(store, { demo = false } = {}) {
 
   function showScreen(id) {
     $('loading').hidden = true;
+    setSky(id === 'screen-vote' ? 'neutre' : null);
     for (const screen of document.querySelectorAll('.screen')) screen.hidden = screen.id !== id;
     window.scrollTo(0, 0);
   }
@@ -634,6 +761,7 @@ export async function startApp(store, { demo = false } = {}) {
   const vote = { code: null, value: null, open: true };
 
   function paintChoices() {
+    if (!$('screen-vote').hidden) setSky(skyFor(vote.value));
     choiceButtons.forEach((button) => {
       const value = Number(button.dataset.value);
       const selected = vote.value === value;
@@ -737,7 +865,7 @@ export async function startApp(store, { demo = false } = {}) {
   /* ------------------------------------------------------------ Vue animateur */
 
   const qrReady = loadScript('vendor/qrcode-generator-1.4.4.js?v=__VERSION__');
-  const host = { code: null, joinUrl: '', meta: null, data: { votes: null, participants: null }, timer: null, heldAt: null, deadline: 0 };
+  const host = { code: null, joinUrl: '', teamName: '', history: [], historyLoaded: false, meta: null, data: { votes: null, participants: null }, timer: null, heldAt: null, deadline: 0 };
 
   const autoEnabled = () => readStored(AUTO_KEY) === 'on';   // désactivée par défaut
   $('auto-reveal').checked = autoEnabled();
@@ -796,13 +924,29 @@ export async function startApp(store, { demo = false } = {}) {
       : (values.length ? `${plural(values.length, 'vote')} sur ${plural(online, 'connecté')}. Les météos restent cachées jusqu'à la révélation.` : 'En attente des premiers votes…');
     document.querySelector('.host-grid').classList.toggle('is-revealed', revealed);
     $('host-results').hidden = !revealed;
-    if (revealed) { stopCountdown(); renderResults($('host-results'), data.votes); }
+    if (revealed) { stopCountdown(); renderHostBulletin(); }
     checkAutoReveal();
+  }
+
+  /** Bulletin de révélation, avec la tendance lue dans l'historique de l'équipe. */
+  function renderHostBulletin() {
+    const { meta, data } = host;
+    const sid = sessionId(meta.createdAt, host.code);
+    const index = weatherIndex(countsOf(valuesOf(data.votes)));
+    const trend = trendOf(host.history, { sid, date: meta.createdAt, index });
+    renderBulletin($('host-results'), { teamName: host.teamName, label: meta.label, votes: data.votes, trend });
+    if (!host.historyLoaded) {
+      host.historyLoaded = true;
+      store.getHistory(meta.teamId).then((raw) => {
+        host.history = historyList(raw);
+        if (host.meta?.status === STATUS.revealed && host.meta.teamId === meta.teamId) renderHostBulletin();
+      });
+    }
   }
 
   function showHost(code) {
     showScreen('screen-host');
-    Object.assign(host, { code, meta: null, data: { votes: null, participants: null }, heldAt: null });
+    Object.assign(host, { code, meta: null, data: { votes: null, participants: null }, heldAt: null, teamName: '', history: [], historyLoaded: false });
     stopCountdown();
     const joinUrl = absoluteUrl({ meteo: code });
     const joinLabel = joinUrl.replace(/^https?:\/\//, '');
@@ -837,6 +981,8 @@ export async function startApp(store, { demo = false } = {}) {
       if (!teamLoaded) {
         teamLoaded = true;
         const teamMeta = await store.getTeamMeta(value.teamId).catch(() => null);
+        host.teamName = teamMeta?.name ?? '';
+        if (host.meta?.status === STATUS.revealed) renderHost();
         $('host-team').textContent = `${teamMeta?.name ?? 'Équipe'} · ${formatDate(value.createdAt)}`;
         document.title = `${teamMeta?.name ?? 'Météo'} · ${value.label || code} (animateur)`;
       }

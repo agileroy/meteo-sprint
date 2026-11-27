@@ -98,6 +98,11 @@ export function createMeteoStore(db, { random = cryptoRandom } = {}) {
       return { teamId, name: meta.name, createdAt: meta.createdAt, history: history ?? {}, isOwner: isValidKey(key) };
     },
 
+    /** Historique de l'équipe (lisible par tout connecté) ; null si illisible. */
+    getHistory(teamId) {
+      return db.get(`${teamPath(teamId)}/history`).catch(() => null);
+    },
+
     renameTeam(teamId, rawName) {
       if (validateName(rawName)) return Promise.resolve(false);
       return ok(db.set(`${teamPath(teamId)}/meta/name`, normalizeText(rawName)));

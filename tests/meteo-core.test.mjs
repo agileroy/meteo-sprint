@@ -147,3 +147,28 @@ test('purge à 30 jours, pluriels', () => {
   assert.equal(plural(2, 'vote'), '2 votes');
   assert.equal(plural(0, 'sprint'), '0 sprint');
 });
+
+import { trendOf, trendText, tickerItems, skyFor } from '../site/js/meteo-core.js';
+
+test('tendance par rapport au sprint précédent (par date)', () => {
+  const e = (sid, date, index, label) => ({ sid, date, index, label, counts: {}, total: 1 });
+  const entries = [e('a', 100, 3.1, 'Sprint 40'), e('c', 300, 4.0, 'Sprint 42'), e('b', 200, 3.1, 'Sprint 41')]
+    .sort((x, y) => x.date - y.date);
+  assert.deepEqual(trendOf(entries, { sid: 'c', date: 300, index: 3.6 }).delta, 0.5);
+  assert.equal(trendText(trendOf(entries, { sid: 'c', date: 300, index: 3.6 })), 'En hausse : +0,5 par rapport à Sprint 41');
+  assert.equal(trendText(trendOf(entries, { sid: 'c', date: 300, index: 2.8 })), 'En baisse : −0,3 par rapport à Sprint 41');
+  assert.equal(trendText(trendOf(entries, { sid: 'c', date: 300, index: 3.15 })), 'Stable par rapport à Sprint 41');
+  assert.equal(trendOf(entries, { sid: 'a', date: 100, index: 3 }), null, 'premier sprint');
+  assert.equal(trendOf([], { sid: 'x', date: 1, index: 3 }), null);
+  assert.equal(trendOf(entries, { sid: 'c', date: 300, index: null }), null);
+  assert.equal(trendText(null), '');
+});
+
+test('bandeau du bulletin et ciel du participant', () => {
+  const counts = { soleil: 2, eclaircies: 3, nuageux: 1, pluie: 0, orage: 0 };
+  assert.deepEqual(tickerItems(counts, null), ['Grand soleil 2', 'Éclaircies 3', 'Nuageux 1', 'Pluie 0', 'Orage 0']);
+  const trend = { direction: 'up', delta: 0.5, previous: { label: 'Sprint 41', index: 3.1, date: 1 } };
+  assert.equal(tickerItems(counts, trend).at(-1), 'Sprint 41 : 3,1');
+  assert.equal(skyFor(null), 'neutre');
+  assert.equal(skyFor(2), 'pluie');
+});
