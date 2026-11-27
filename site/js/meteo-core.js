@@ -285,3 +285,22 @@ export function tickerItems(counts) {
 export function skyFor(value) {
   return weatherFor(value)?.key ?? 'neutre';
 }
+
+/* ---------- Page d'équipe ---------- */
+
+/** Nombre de cartes « Les dernières météos ». */
+export const FORECAST_CARDS = 6;
+
+/** Météo d'un sprint de l'historique : celle de son indice arrondi (4,7 → Grand soleil), ou null. */
+export function weatherOfEntry(entry) {
+  if (!entry || entry.index === null || entry.index === undefined) return null;
+  return weatherFor(Math.min(5, Math.max(1, Math.round(entry.index))));
+}
+
+/** « Grand soleil · 4,7 / 5 · 3 sprints », ou « Pas encore de météo ». */
+export function lastWeatherText(entries) {
+  const last = entries?.at(-1);
+  const weather = weatherOfEntry(last);
+  if (!weather) return 'Pas encore de météo';
+  return `Dernière météo : ${weather.name} · ${formatIndex(last.index)} / 5 · ${plural(entries.length, 'sprint')}`;
+}

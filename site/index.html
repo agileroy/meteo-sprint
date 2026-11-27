@@ -111,54 +111,66 @@
 
     <!-- Page d'équipe -->
     <section class="screen" id="screen-team" hidden>
-      <header class="page-head">
-        <div>
-          <p class="eyebrow">Équipe</p>
-          <h1 id="team-name"></h1>
-        </div>
-        <div class="head-actions" id="team-owner-actions" hidden>
-          <button type="button" class="button button-ghost" id="team-rename">Renommer</button>
-          <button type="button" class="button button-ghost button-danger" id="team-delete">Supprimer l'équipe</button>
+      <header class="hero" id="team-hero" data-sky="neutre">
+        <div class="hero-sky" id="team-sky" aria-hidden="true"></div>
+        <div class="hero-content">
+          <div class="hero-top">
+            <div class="hero-title">
+              <p class="eyebrow">Équipe</p>
+              <h1 id="team-name"></h1>
+              <p class="hero-last" id="team-last"></p>
+            </div>
+            <div class="head-actions" id="team-owner-actions" hidden>
+              <button type="button" class="button button-ghost button-small" id="team-rename">Renommer</button>
+              <button type="button" class="button button-ghost button-small button-danger" id="team-delete">Supprimer l'équipe</button>
+            </div>
+          </div>
+          <div class="hero-actions">
+            <form class="launch-form" id="team-owner" novalidate hidden>
+              <label class="visually-hidden" for="label-input">Libellé de la météo (facultatif)</label>
+              <input id="label-input" name="label" maxlength="40" autocomplete="off" placeholder="Libellé (facultatif) : Sprint 42">
+              <button type="submit" class="button button-primary" id="launch-submit">Lancer une météo</button>
+            </form>
+            <button type="button" class="button button-ghost share-toggle" id="share-toggle" aria-expanded="false" aria-controls="share-panel">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+              Partager
+            </button>
+          </div>
+          <p class="hint is-error hero-error" id="launch-error" role="alert"></p>
         </div>
       </header>
       <p class="notice is-error" id="team-error-msg" role="alert" hidden></p>
 
-      <div class="team-grid" id="team-owner" hidden>
-        <form class="panel" id="launch-form" novalidate>
-          <h2>Lancer une météo</h2>
-          <label class="field"><span>Libellé <span class="muted">(facultatif)</span></span>
-            <input id="label-input" name="label" maxlength="40" autocomplete="off" placeholder="Sprint 42">
-          </label>
-          <button type="submit" class="button button-primary button-large" id="launch-submit">Lancer une météo</button>
-          <p class="hint is-error" id="launch-error" role="alert"></p>
-        </form>
+      <section class="panel share-panel" id="share-panel" aria-labelledby="links-title" hidden>
+        <h2 id="links-title">Partager</h2>
+        <div class="key-callout" id="key-callout" hidden>
+          <strong>Gardez ce lien&nbsp;: il permet d'animer cette équipe depuis un autre navigateur.</strong>
+          <span>Sans lui, l'historique reste consultable mais plus personne ne pourra lancer de météo si ce navigateur est effacé.</span>
+        </div>
+        <div class="link-row">
+          <label class="field" for="public-link">Consulter l'historique <span class="muted small">(à partager avec l'équipe)</span></label>
+          <div class="copy-row">
+            <input id="public-link" readonly>
+            <button type="button" class="button button-ghost" data-copy="public-link">Copier</button>
+          </div>
+        </div>
+        <div class="link-row" id="key-section" hidden>
+          <div class="link-row-head">
+            <label class="field" for="key-link">Lien d'animation <span class="muted small">(gardez-le pour vous)</span></label>
+            <button type="button" class="button button-ghost button-small" id="key-toggle" aria-expanded="false">Afficher</button>
+          </div>
+          <div class="copy-row" id="key-row" hidden>
+            <input id="key-link" readonly>
+            <button type="button" class="button button-ghost" data-copy="key-link">Copier</button>
+          </div>
+        </div>
+        <p class="hint is-ok" id="copy-status" role="status"></p>
+      </section>
 
-        <section class="panel links-panel" aria-labelledby="links-title">
-          <h2 id="links-title">Liens de l'équipe</h2>
-          <div class="key-callout" id="key-callout" hidden>
-            <strong>Gardez ce lien&nbsp;: il permet d'animer cette équipe depuis un autre navigateur.</strong>
-            <span>Sans lui, l'historique reste consultable mais plus personne ne pourra lancer de météo si ce navigateur est effacé.</span>
-          </div>
-          <div class="link-row">
-            <label class="field" for="public-link">Consulter l'historique <span class="muted small">(à partager avec l'équipe)</span></label>
-            <div class="copy-row">
-              <input id="public-link" readonly>
-              <button type="button" class="button button-ghost" data-copy="public-link">Copier</button>
-            </div>
-          </div>
-          <div class="link-row">
-            <div class="link-row-head">
-              <label class="field" for="key-link">Lien d'animation <span class="muted small">(gardez-le pour vous)</span></label>
-              <button type="button" class="button button-ghost button-small" id="key-toggle" aria-expanded="false">Afficher</button>
-            </div>
-            <div class="copy-row" id="key-row" hidden>
-              <input id="key-link" readonly>
-              <button type="button" class="button button-ghost" data-copy="key-link">Copier</button>
-            </div>
-          </div>
-          <p class="hint is-ok" id="copy-status" role="status"></p>
-        </section>
-      </div>
+      <section class="panel forecast-panel" id="forecast-panel" aria-labelledby="forecast-title" hidden>
+        <h2 id="forecast-title">Les dernières météos</h2>
+        <ul class="forecast" id="forecast"></ul>
+      </section>
 
       <section class="panel history-panel" aria-labelledby="history-title">
         <div class="panel-head">

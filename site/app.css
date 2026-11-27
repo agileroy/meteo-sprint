@@ -217,8 +217,6 @@ input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 
 
 /* ---------------------------------------------------------------- Page d'équipe */
 
-.team-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 16px; align-items: start; }
-.links-panel { gap: 14px; }
 .link-row { display: flex; flex-direction: column; gap: 6px; }
 .link-row-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .copy-row { display: flex; gap: 8px; }
@@ -409,11 +407,12 @@ input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 
 
 /* ---------------------------------------------------------------- Ciel vivant (vue participant) */
 
-.sky { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; display: none; }
+.sky { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; display: none; container-type: size; }
+.hero-sky { position: absolute; inset: 0; overflow: hidden; pointer-events: none; container-type: size; }
 body[data-sky] .sky { display: block; }
 .sky-layer { position: absolute; inset: 0; opacity: 0; transition: opacity 0.8s ease; }
-body[data-sky="neutre"] .sky-neutre, body[data-sky="soleil"] .sky-soleil, body[data-sky="eclaircies"] .sky-eclaircies,
-body[data-sky="nuageux"] .sky-nuageux, body[data-sky="pluie"] .sky-pluie, body[data-sky="orage"] .sky-orage { opacity: 1; }
+[data-sky="neutre"] .sky-neutre, [data-sky="soleil"] .sky-soleil, [data-sky="eclaircies"] .sky-eclaircies,
+[data-sky="nuageux"] .sky-nuageux, [data-sky="pluie"] .sky-pluie, [data-sky="orage"] .sky-orage { opacity: 1; }
 
 :root {
   --sky-neutre: linear-gradient(180deg, #f3e7d3 0%, #eef1f2 100%);
@@ -449,32 +448,87 @@ body[data-sky="nuageux"] .sky-nuageux, body[data-sky="pluie"] .sky-pluie, body[d
 .sky-orage { background: var(--sky-orage); }
 
 /* Encre du titre, contrastée sur chaque ciel. */
-body[data-sky] { --sky-ink: #1f2a33; --sky-ink-soft: #3d4a55; }
-body[data-sky="pluie"], body[data-sky="orage"],
-:root[data-theme="dark"] body[data-sky] { --sky-ink: #f4f7fa; --sky-ink-soft: #d3dbe2; }
+[data-sky] { --sky-ink: #1f2a33; --sky-ink-soft: #3d4a55; }
+[data-sky="pluie"], [data-sky="orage"],
+:root[data-theme="dark"] [data-sky] { --sky-ink: #f4f7fa; --sky-ink-soft: #d3dbe2; }
 body[data-sky] .brand, body[data-sky] .vote-head h1 { color: var(--sky-ink); }
 body[data-sky] .vote-head .eyebrow { color: var(--sky-ink-soft); }
 body[data-sky] .vote-screen .anon-note { background: var(--surface); border-radius: 10px; padding: 10px 12px; color: var(--muted); }
 
-.sky-sun { position: absolute; top: 6vh; right: 8vw; width: clamp(110px, 16vw, 220px); }
+.sky-sun { position: absolute; top: 6cqh; right: 8cqw; width: clamp(110px, 16cqw, 220px); }
 .sky-sun .rays { transform-origin: 50% 50%; animation: spin 90s linear infinite; }
-.sky-sun-small { top: 8vh; right: 18vw; width: clamp(80px, 11vw, 150px); }
+.sky-sun-small { top: 8cqh; right: 18cqw; width: clamp(80px, 11cqw, 150px); }
 :root[data-theme="dark"] .sky-sun .rays { display: none; }
 :root[data-theme="dark"] .sky-sun .disc { r: 26px; }
 .sky-stars { position: absolute; inset: 0 0 40% 0; display: none; }
 :root[data-theme="dark"] .sky-soleil .sky-stars, :root[data-theme="dark"] .sky-eclaircies .sky-stars { display: block; }
-.cloud { position: absolute; left: 0; width: var(--w, 200px); animation: drift var(--d, 90s) linear infinite; animation-delay: var(--delay, 0s); transform: translateX(var(--x, 10vw)); }
+.cloud { position: absolute; left: 0; width: var(--w, 200px); animation: drift var(--d, 90s) linear infinite; animation-delay: var(--delay, 0s); transform: translateX(var(--x, 10cqw)); }
 .cloud path { fill: var(--c, var(--sky-cloud)); }
 .drop { position: absolute; top: 0; width: 2px; height: 16px; border-radius: 2px; background: var(--sky-drop); transform: translateY(var(--y)) rotate(12deg); animation: fall var(--d, 0.9s) linear infinite; animation-delay: var(--delay, 0s); }
 .flash { position: absolute; inset: 0; background: #fff; opacity: 0; animation: flash 7s ease-out infinite; }
-.bolt { position: absolute; top: 22vh; left: 22vw; width: clamp(40px, 5vw, 70px); opacity: 0; animation: bolt 7s ease-out infinite; }
-@keyframes drift { from { transform: translateX(-35vw); } to { transform: translateX(110vw); } }
-@keyframes fall { from { transform: translateY(-10vh) rotate(12deg); } to { transform: translateY(110vh) rotate(12deg); } }
+.bolt { position: absolute; top: 22cqh; left: 22cqw; width: clamp(40px, 5cqw, 70px); opacity: 0; animation: bolt 7s ease-out infinite; }
+@keyframes drift { from { transform: translateX(-35cqw); } to { transform: translateX(110cqw); } }
+@keyframes fall { from { transform: translateY(-10cqh) rotate(12deg); } to { transform: translateY(110cqh) rotate(12deg); } }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes flash { 0%, 90% { opacity: 0; } 91% { opacity: 0.45; } 92% { opacity: 0.05; } 93.5% { opacity: 0.3; } 100% { opacity: 0; } }
 @keyframes bolt { 0%, 90% { opacity: 0; } 91%, 94% { opacity: 1; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
   .flash, .bolt { display: none; }
+}
+
+/* ---------------------------------------------------------------- Page d'équipe : ciel et prévisions */
+
+.hero { position: relative; overflow: hidden; border-radius: 18px; min-height: 210px; box-shadow: var(--shadow); }
+.hero .sky-sun { top: auto; bottom: 10cqh; right: 5cqw; width: clamp(70px, 9cqw, 120px); }
+.hero .cloud { width: calc(var(--w, 200px) * 0.5); }
+.hero .sky-layer .cloud:nth-of-type(n+4) { display: none; }
+.hero .sky-sun-small { top: auto; bottom: 14cqh; right: 12cqw; width: clamp(56px, 7cqw, 96px); }
+.hero-content { position: relative; display: flex; flex-direction: column; gap: 18px; padding: 24px 28px; }
+.hero-top { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.hero-title { display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
+.hero h1 { color: var(--sky-ink); overflow-wrap: anywhere; font-size: clamp(1.7rem, 1.2rem + 2vw, 2.6rem); }
+.hero .eyebrow, .hero-last { color: var(--sky-ink-soft); }
+.hero-last { font-weight: 650; font-size: 1.02rem; }
+.hero .button-ghost { background: var(--surface); }
+.hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.launch-form { display: flex; flex-wrap: nowrap; gap: 8px; }
+.launch-form .button { white-space: nowrap; }
+.launch-form input { width: min(320px, 100%); background: var(--surface); }
+.share-toggle { display: inline-flex; align-items: center; gap: 8px; }
+.share-toggle[aria-expanded="true"] { border-color: var(--accent); }
+.hero-error:empty { display: none; }
+.hero-error { padding: 6px 10px; border-radius: 8px; background: var(--surface); align-self: flex-start; }
+.share-panel { gap: 14px; }
+
+.forecast-panel { gap: 14px; }
+.forecast { display: flex; gap: 12px; overflow-x: auto; padding: 2px 2px 6px; scroll-snap-type: x proximity; }
+.forecast li { flex: none; scroll-snap-align: start; }
+.forecast-card {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; width: 150px; padding: 14px 10px 12px;
+  border: 1px solid var(--border); border-radius: 14px; background: var(--surface); cursor: pointer; text-align: center;
+  transition: transform 0.12s ease, border-color 0.12s ease;
+}
+.forecast-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+.forecast-card .wicon { width: 58px; height: 58px; margin: 4px 0; }
+.fc-label { color: var(--muted); font-size: 0.85rem; font-weight: 650; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fc-index { font-size: 1.9rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.fc-index span { font-size: 0.9rem; color: var(--muted); font-weight: 650; }
+.fc-name { color: var(--muted); font-size: 0.88rem; }
+.forecast-card.is-latest { border: 2px solid var(--w-soleil); background: var(--sun-soft); }
+.forecast-card.is-latest .fc-label { color: var(--text); }
+.forecast-next { justify-content: center; min-height: 100%; border-style: dashed; border-width: 2px; color: var(--muted); font-weight: 650; background: transparent; }
+.forecast-next .plus { font-size: 1.8rem; line-height: 1; }
+
+.chart .col-icon { pointer-events: none; }
+
+@media (max-width: 640px) {
+  .hero-content { padding: 18px; }
+  .hero .cloud, .hero .sky-sun, .hero .bolt { display: none; }
+  .hero-title { max-width: 100%; }
+  .launch-form { flex-wrap: wrap; }
+  .launch-form, .launch-form input { width: 100%; }
+  .launch-form .button { flex: 1; }
+  .forecast-card { width: 128px; }
 }
 
 /* ---------------------------------------------------------------- Bulletin (révélation, vue animateur) */
@@ -528,7 +582,7 @@ body[data-sky] .vote-screen .anon-note { background: var(--surface); border-radi
 /* ---------------------------------------------------------------- Téléphone et tablette */
 
 @media (max-width: 860px) {
-  .host-grid, .team-grid { grid-template-columns: minmax(0, 1fr); }
+  .host-grid { grid-template-columns: minmax(0, 1fr); }
   .results { grid-template-columns: minmax(0, 1fr); }
 }
 

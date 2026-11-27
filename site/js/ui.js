@@ -6,7 +6,7 @@ import {
   WEATHERS, STATUS, AUTO_REVEAL_DELAY_MS, FEW_VOTES, CHART_SPRINTS, NAME_MAX, normalizeCode, isValidCode, isValidTeamId,
   isValidKey, isValidVote, weatherFor, valuesOf, countsOf, totalOf, weatherIndex, formatIndex, distribution, topWeathers,
   joinNames, connectedUids, everyoneVoted, situationKey, historyList, sprintName, nextLabel, parseTeams, touchTeam,
-  removeTeam, plural, formatDate, formatDay, validateName, tickerItems, skyFor, parseSessionId,
+  removeTeam, plural, formatDate, formatDay, validateName, tickerItems, skyFor, parseSessionId, weatherOfEntry, lastWeatherText, FORECAST_CARDS,
 } from './meteo-core.js?v=__VERSION__';
 
 const $ = (id) => document.getElementById(id);
@@ -165,7 +165,7 @@ function renderChart(box, tip, entries, { onOpen } = {}) {
   const width = Math.max(300, Math.round(box.clientWidth || 640));
   const narrow = width < 520;
   const height = narrow ? 240 : 300;
-  const m = { top: 22, right: 8, bottom: 30, left: 26 };
+  const m = { top: 46, right: 8, bottom: 30, left: 26 };
   const plotW = width - m.left - m.right;
   const plotH = height - m.top - m.bottom;
   const slot = plotW / entries.length;
@@ -191,7 +191,7 @@ function renderChart(box, tip, entries, { onOpen } = {}) {
   entries.forEach((entry, i) => {
     const cx = m.left + slot * (i + 0.5);
     const group = svg('g', { class: 'sprint', tabindex: '0', 'data-index': String(i) });
-    group.append(svg('rect', { class: 'hit', x: cx - slot / 2 + 1, y: m.top - 16, width: slot - 2, height: plotH + 22, rx: 8 }));
+    group.append(svg('rect', { class: 'hit', x: cx - slot / 2 + 1, y: 4, width: slot - 2, height: m.top + plotH + 2, rx: 8 }));
     const top = yOf(entry.index);
     const barH = m.top + plotH - top;
     let y = m.top + plotH;
@@ -202,10 +202,15 @@ function renderChart(box, tip, entries, { onOpen } = {}) {
       y -= h;
       group.append(svg('rect', { class: `seg-${weather.key}`, x: cx - barW / 2, y, width: barW, height: Math.max(h - 1, 0.5), rx: 2 }));
     }
+    const iconSize = Math.max(16, Math.min(28, slot * 0.5));
+    const weather = weatherOfEntry(entry);
     if (showValues) {
       const value = svg('text', { class: 'index-text', x: cx, y: top - 7, 'text-anchor': 'middle' });
       value.textContent = formatIndex(entry.index);
       group.append(value);
+    }
+    if (weather) {
+      group.append(svg('use', { class: 'col-icon', href: `#w-${weather.key}`, x: cx - iconSize / 2, y: top - (showValues ? 22 : 6) - iconSize, width: iconSize, height: iconSize }));
     }
     const name = sprintName(entry);
     const label = svg('text', { class: 'x-text', x: cx, y: height - 10, 'text-anchor': 'middle' });
@@ -264,7 +269,7 @@ function seeded(seed) {
 }
 
 function cloud({ w, x, top, d, delay, color = null, opacity = 1 }) {
-  const node = svg('svg', { class: 'cloud', viewBox: '6 12 38 28', style: `--w:${w}px;--x:${x}vw;--d:${d}s;--delay:${delay}s;top:${top}vh;opacity:${opacity};${color ? `--c:${color};` : ''}` },
+  const node = svg('svg', { class: 'cloud', viewBox: '6 12 38 28', style: `--w:${w}px;--x:${x}cqw;--d:${d}s;--delay:${delay}s;top:${top}cqh;opacity:${opacity};${color ? `--c:${color};` : ''}` },
     svg('path', { d: CLOUD_D }));
   return node;
 }
@@ -298,7 +303,7 @@ function clouds(random, count, { minW, maxW, maxTop, color = null, opacity = 1, 
 function rain(random, count) {
   return Array.from({ length: count }, () => el('span', {
     class: 'drop',
-    style: `left:${(random() * 100).toFixed(1)}vw;--y:${(random() * 100).toFixed(0)}vh;--d:${(0.7 + random() * 0.5).toFixed(2)}s;--delay:${(-random() * 1.2).toFixed(2)}s;`,
+    style: `left:${(random() * 100).toFixed(1)}cqw;--y:${(random() * 100).toFixed(0)}cqh;--d:${(0.7 + random() * 0.5).toFixed(2)}s;--delay:${(-random() * 1.2).toFixed(2)}s;`,
   }));
 }
 
@@ -388,6 +393,7 @@ export async function startApp(store, { demo = false } = {}) {
 
   $('demo-chip').hidden = !demo;
   buildSky($('sky'));
+  buildSky($('team-sky'));
 
   try {
     await Promise.race([
@@ -559,10 +565,15 @@ export async function startApp(store, { demo = false } = {}) {
     $('team-error-msg').hidden = true;
     $('team-owner').hidden = true;
     $('team-owner-actions').hidden = true;
-    $('key-callout').hidden = !(history.state?.justCreated);
-    $('key-row').hidden = !(history.state?.justCreated);
-    $('key-toggle').setAttribute('aria-expanded', String(!!history.state?.justCreated));
-    $('key-toggle').textContent = history.state?.justCreated ? 'Masquer' : 'Afficher';
+    const justCreated = Boolean(history.state?.justCreated);
+    $('key-callout').hidden = !justCreated;
+    $('key-row').hidden = !justCreated;
+    $('key-toggle').setAttribute('aria-expanded', String(justCreated));
+    $('key-toggle').textContent = justCreated ? 'Masquer' : 'Afficher';
+    setShare(justCreated);
+    $('team-hero').dataset.sky = 'neutre';
+    $('team-last').textContent = '';
+    $('forecast-panel').hidden = true;
     $('copy-status').textContent = '';
     $('launch-error').textContent = '';
 
@@ -588,6 +599,7 @@ export async function startApp(store, { demo = false } = {}) {
     if (owner) rememberTeam(teamId);
     $('team-owner').hidden = !owner;
     $('team-owner-actions').hidden = !owner;
+    $('key-section').hidden = !owner;
     $('public-link').value = absoluteUrl({ equipe: teamId });
     $('key-link').value = owner ? absoluteUrl({ equipe: teamId, cle: team.key }) : '';
 
@@ -636,7 +648,43 @@ export async function startApp(store, { demo = false } = {}) {
     renderChart($('chart'), $('chart-tip'), visibleEntries(), { onOpen: openSprint });
   }
 
+  function renderHero() {
+    const weather = weatherOfEntry(team.entries.at(-1));
+    $('team-hero').dataset.sky = weather?.key ?? 'neutre';
+    $('team-last').textContent = lastWeatherText(team.entries);
+  }
+
+  /** Cartes « Les dernières météos », du plus ancien au plus récent, et « Prochaine météo ? » pour l'animateur. */
+  function renderForecast() {
+    const owner = Boolean(team.key);
+    const recent = team.entries.slice(-FORECAST_CARDS);
+    $('forecast-panel').hidden = !recent.length && !owner;
+    const cards = recent.map((entry, i) => {
+      const weather = weatherOfEntry(entry);
+      const latest = i === recent.length - 1;
+      const card = el('button', {
+        type: 'button', class: `forecast-card${latest ? ' is-latest' : ''}`,
+        'aria-label': `Ouvrir ${sprintName(entry)} : ${weather.name}, indice ${formatIndex(entry.index)} sur 5${latest ? ', dernière météo' : ''}`,
+      },
+      el('span', { class: 'fc-label', 'aria-hidden': 'true', text: latest ? `${sprintName(entry)} · dernière` : sprintName(entry) }),
+      weatherIcon(weather),
+      el('span', { class: 'fc-index', 'aria-hidden': 'true' }, formatIndex(entry.index), el('span', { text: ' / 5' })),
+      el('span', { class: 'fc-name', 'aria-hidden': 'true', text: weather.name }));
+      card.addEventListener('click', () => openSprint(entry));
+      return el('li', {}, card);
+    });
+    if (owner) {
+      const next = el('button', { type: 'button', class: 'forecast-card forecast-next' },
+        el('span', { class: 'plus', 'aria-hidden': 'true', text: '+' }), 'Prochaine météo ?');
+      next.addEventListener('click', () => { $('label-input').focus(); $('label-input').select(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+      cards.push(el('li', {}, next));
+    }
+    $('forecast').replaceChildren(...cards);
+  }
+
   function renderHistory() {
+    renderHero();
+    renderForecast();
     const entries = team.entries;
     const owner = Boolean(team.key);
     $('history-empty').hidden = entries.length > 0;
@@ -690,6 +738,16 @@ export async function startApp(store, { demo = false } = {}) {
   }
 
 
+  function setShare(open) {
+    $('share-panel').hidden = !open;
+    $('share-toggle').setAttribute('aria-expanded', String(open));
+  }
+  $('share-toggle').addEventListener('click', () => {
+    const open = $('share-panel').hidden;
+    setShare(open);
+    if (open) $('share-panel').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  });
+
   $('key-toggle').addEventListener('click', () => {
     const open = $('key-row').hidden;
     $('key-row').hidden = !open;
@@ -705,7 +763,7 @@ export async function startApp(store, { demo = false } = {}) {
     });
   }
 
-  $('launch-form').addEventListener('submit', async (event) => {
+  $('team-owner').addEventListener('submit', async (event) => {
     event.preventDefault();
     $('launch-submit').disabled = true;
     $('launch-error').textContent = '';

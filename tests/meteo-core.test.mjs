@@ -168,3 +168,17 @@ test('sprint sans libellé : date courte et heure ; clé d\'historique décodée
   assert.equal(parseSessionId('pas-un-sid'), null);
   assert.equal(CHART_SPRINTS, 10);
 });
+
+import { weatherOfEntry, lastWeatherText, FORECAST_CARDS } from '../site/js/meteo-core.js';
+
+test('page d\'équipe : météo d\'un sprint par l\'indice arrondi, dernière météo', () => {
+  assert.equal(weatherOfEntry({ index: 4.7 }).name, 'Grand soleil');
+  assert.equal(weatherOfEntry({ index: 4.3 }).name, 'Éclaircies');
+  assert.equal(weatherOfEntry({ index: 2.5 }).name, 'Nuageux');
+  assert.equal(weatherOfEntry({ index: 1 }).name, 'Orage');
+  assert.equal(weatherOfEntry({ index: null }), null);
+  assert.equal(weatherOfEntry(undefined), null);
+  assert.equal(lastWeatherText([]), 'Pas encore de météo');
+  assert.equal(lastWeatherText([{ index: 4 }, { index: 4.3 }, { index: 4.7 }]), 'Dernière météo : Grand soleil · 4,7 / 5 · 3 sprints');
+  assert.equal(FORECAST_CARDS, 6);
+});
