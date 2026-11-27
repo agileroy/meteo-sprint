@@ -396,6 +396,7 @@ export async function startApp(store, { demo = false } = {}) {
   buildSky($('sky'));
   buildSky($('team-sky'));
   buildSky($('host-sky'));
+  buildSky($('home-sky'));
 
   try {
     await Promise.race([
@@ -512,20 +513,34 @@ export async function startApp(store, { demo = false } = {}) {
     $('teams-panel').hidden = !list.length;
     if (!list.length) return;
     const items = list.map((entry) => {
-      const name = el('span', { class: 'item-name', text: '…' });
-      const meta = el('span', { class: 'item-meta', text: ' ' });
-      const open = el('a', { class: 'button button-ghost button-small', href: urlFor({ equipe: entry.id }), text: 'Ouvrir' });
-      open.addEventListener('click', (event) => { event.preventDefault(); go({ equipe: entry.id }); });
-      const item = el('li', { class: 'list-item' }, el('div', { class: 'item-main' }, name, meta), el('div', { class: 'item-actions' }, open));
+      // Carte comme les prévisions de la page d'équipe : icône de la dernière météo, indice, nom, sprints.
+      const icon = el('span', { class: 'fc-icon' }, weatherIcon(WEATHERS[2]));
+      const index = el('span', { class: 'fc-index', text: '…' });
+      const name = el('span', { class: 'fc-team', text: 'Équipe' });
+      const meta = el('span', { class: 'fc-name', text: ' ' });
+      const card = el('a', { class: 'forecast-card team-card is-empty', href: urlFor({ equipe: entry.id }) }, icon, index, name, meta);
+      card.addEventListener('click', (event) => { event.preventDefault(); go({ equipe: entry.id }); });
+      const item = el('li', {}, card);
       const drop = () => { forgetTeam(entry.id); item.remove(); $('teams-panel').hidden = !readTeams().length; };
       store.teamSummary(entry.id).then((summary) => {
-        if (summary === undefined) { name.textContent = 'Équipe'; meta.textContent = 'Indisponible pour l\'instant'; return; }
+        if (summary === undefined) { index.textContent = ''; meta.textContent = 'Indisponible pour l\'instant'; return; }
         if (summary === null || !summary.isOwner) { drop(); return; }
         const sprints = historyList(summary.history);
+        const last = sprints.at(-1);
+        const weather = weatherOfEntry(last);
         name.textContent = summary.name;
-        meta.textContent = sprints.length
-          ? `${plural(sprints.length, 'sprint')} · dernière météo le ${formatDay(sprints.at(-1).date)}`
-          : 'Aucune météo';
+        card.title = summary.name;
+        if (weather) {
+          icon.replaceChildren(weatherIcon(weather));
+          index.replaceChildren(formatIndex(last.index), el('span', { text: ' / 5' }));
+          meta.textContent = `${plural(sprints.length, 'sprint')} · ${formatDay(last.date)}`;
+          card.classList.remove('is-empty');
+          card.setAttribute('aria-label', `Ouvrir ${summary.name} : dernière météo ${weather.name}, ${formatIndex(last.index)} sur 5, ${plural(sprints.length, 'sprint')}`);
+        } else {
+          index.textContent = '–';
+          meta.textContent = 'Aucune météo';
+          card.setAttribute('aria-label', `Ouvrir ${summary.name} : aucune météo`);
+        }
       });
       return item;
     });

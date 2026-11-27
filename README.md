@@ -22,7 +22,7 @@
 - **Anonymat** : avant la révélation, l'écran de l'animateur n'affiche que des compteurs (« 4 votes sur 6 connectés »). L'historique ne garde que des totaux par météo, jamais de vote individuel ; les salles (et donc les votes) sont supprimées 30 jours après leur création. Sous 3 votes, les résultats le signalent : chacun peut deviner le vote des autres.
 - **Page d'équipe** : un bandeau au ciel de la dernière météo de l'équipe, avec « Lancer une météo », et à côté la carte « Partager l'historique » (QR code agrandissable, lien public copiable en un clic, « Lien d'animation » pour l'animateur) ; les 6 dernières météos en cartes façon prévisions, à ouvrir d'un clic.
 - **Évolution de l'équipe** : une colonne par sprint, haute de l'indice moyen (sur 5) et colorée selon la répartition des votes, 10 derniers sprints sur le graphique, tout l'historique dans le tableau. Un clic sur une ligne ou une colonne ouvre la météo : sa vue animateur (pour rouvrir les votes) si ce navigateur l'a lancée et qu'elle a moins de 30 jours, sinon son bilan en lecture seule. Un animateur peut retirer un sprint (météo de test) ; l'historique n'est jamais purgé automatiquement.
-- **Mes équipes** : l'accueil liste les équipes animées depuis ce navigateur.
+- **Accueil** : un bandeau au ciel d'éclaircies avec le formulaire « Voter », la carte « Animer » à côté, et « Mes équipes » en cartes (dernière météo, indice, nombre de sprints) pour les équipes animées depuis ce navigateur.
 - **Mode démo** : avec `?demo` dans l'adresse, l'outil fonctionne sans Firebase, entre les onglets d'un même navigateur (un onglet animateur, d'autres onglets participants). Les règles de sécurité n'y sont pas appliquées.
 
 ## Réseau d'entreprise
